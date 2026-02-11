@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, instrument};
 
 use crate::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig};
+use crate::cost;
 use crate::retry::{with_retry, RetryConfig};
 use crate::traits::{
     LlmProvider, LlmRequest, LlmResponse, Message, ProviderError, ProviderMetadata, Usage,
@@ -135,15 +136,22 @@ impl AnthropicProvider {
             .map(|block| block.text.clone())
             .unwrap_or_default();
 
+        let usage = Usage {
+            prompt_tokens: response.usage.input_tokens,
+            completion_tokens: response.usage.output_tokens,
+            total_tokens: response.usage.input_tokens + response.usage.output_tokens,
+        };
+
+        // Calculate estimated cost
+        let estimated_cost_usd = cost::get_anthropic_pricing(&response.model)
+            .map(|pricing| pricing.calculate_cost(&usage));
+
         LlmResponse {
             content,
             model: response.model,
-            usage: Usage {
-                prompt_tokens: response.usage.input_tokens,
-                completion_tokens: response.usage.output_tokens,
-                total_tokens: response.usage.input_tokens + response.usage.output_tokens,
-            },
+            usage,
             provider_id: self.metadata.id.clone(),
+            estimated_cost_usd,
         }
     }
 

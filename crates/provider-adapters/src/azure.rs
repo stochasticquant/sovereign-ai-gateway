@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, instrument};
 
 use crate::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig};
+use crate::cost;
 use crate::retry::{with_retry, RetryConfig};
 use crate::traits::{
     LlmProvider, LlmRequest, LlmResponse, Message, ProviderError, ProviderMetadata, Usage,
@@ -36,6 +37,8 @@ pub struct AzureConfig {
     pub retry_config: RetryConfig,
     /// Circuit breaker configuration.
     pub circuit_breaker_config: CircuitBreakerConfig,
+    /// Optional endpoint override for testing (bypasses standard Azure URL construction).
+    pub endpoint_override: Option<String>,
 }
 
 impl Default for AzureConfig {
@@ -49,6 +52,7 @@ impl Default for AzureConfig {
             timeout_secs: 60,
             retry_config: RetryConfig::default(),
             circuit_breaker_config: CircuitBreakerConfig::default(),
+            endpoint_override: None,
         }
     }
 }
@@ -112,6 +116,15 @@ impl AzureProvider {
 
     /// Builds the Azure OpenAI endpoint URL.
     fn build_endpoint_url(&self) -> String {
+        // Use endpoint override if provided (for testing)
+        if let Some(override_url) = &self.config.endpoint_override {
+            return format!(
+                "{}/openai/deployments/{}/chat/completions?api-version={}",
+                override_url, self.config.deployment_name, self.config.api_version
+            );
+        }
+
+        // Standard Azure URL format
         format!(
             "https://{}.openai.azure.com/openai/deployments/{}/chat/completions?api-version={}",
             self.config.resource_name, self.config.deployment_name, self.config.api_version
@@ -145,15 +158,23 @@ impl AzureProvider {
             .map(|m| m.content.clone())
             .unwrap_or_default();
 
+        let model = response.model.unwrap_or_else(|| self.config.deployment_name.clone());
+        let usage = Usage {
+            prompt_tokens: response.usage.prompt_tokens,
+            completion_tokens: response.usage.completion_tokens,
+            total_tokens: response.usage.total_tokens,
+        };
+
+        // Calculate estimated cost using Azure pricing (same as OpenAI)
+        let estimated_cost_usd = cost::get_azure_pricing(&model)
+            .map(|pricing| pricing.calculate_cost(&usage));
+
         LlmResponse {
             content,
-            model: response.model.unwrap_or_else(|| self.config.deployment_name.clone()),
-            usage: Usage {
-                prompt_tokens: response.usage.prompt_tokens,
-                completion_tokens: response.usage.completion_tokens,
-                total_tokens: response.usage.total_tokens,
-            },
+            model,
+            usage,
             provider_id: self.metadata.id.clone(),
+            estimated_cost_usd,
         }
     }
 

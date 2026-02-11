@@ -34,6 +34,8 @@ pub struct LlmResponse {
     pub model: String,
     pub usage: Usage,
     pub provider_id: String,
+    /// Estimated cost in USD (if available).
+    pub estimated_cost_usd: Option<f64>,
 }
 
 /// Token usage statistics.

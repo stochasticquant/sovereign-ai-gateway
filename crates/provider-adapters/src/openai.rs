@@ -11,8 +11,9 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, instrument};
 
 use crate::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig};
+use crate::cost;
 use crate::retry::{with_retry, RetryConfig};
-use crate::traits::{LlmProvider, LlmRequest, LlmResponse, Message, ProviderError, ProviderMetadata, Usage};
+use crate::traits::{LlmProvider, LlmRequest, LlmResponse, ProviderError, ProviderMetadata, Usage};
 
 /// OpenAI provider configuration.
 #[derive(Debug, Clone)]
@@ -114,15 +115,22 @@ impl OpenAiProvider {
             .map(|m| m.content.clone())
             .unwrap_or_default();
 
+        let usage = Usage {
+            prompt_tokens: response.usage.prompt_tokens,
+            completion_tokens: response.usage.completion_tokens,
+            total_tokens: response.usage.total_tokens,
+        };
+
+        // Calculate estimated cost
+        let estimated_cost_usd = cost::get_openai_pricing(&response.model)
+            .map(|pricing| pricing.calculate_cost(&usage));
+
         LlmResponse {
             content,
             model: response.model,
-            usage: Usage {
-                prompt_tokens: response.usage.prompt_tokens,
-                completion_tokens: response.usage.completion_tokens,
-                total_tokens: response.usage.total_tokens,
-            },
+            usage,
             provider_id: self.metadata.id.clone(),
+            estimated_cost_usd,
         }
     }
 
@@ -279,6 +287,7 @@ struct OpenAiUsage {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::traits::Message;
 
     #[test]
     fn test_translate_request() {

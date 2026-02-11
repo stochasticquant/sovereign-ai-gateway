@@ -13,9 +13,10 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, instrument};
 
 use crate::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig};
+use crate::cost;
 use crate::retry::{with_retry, RetryConfig};
 use crate::traits::{
-    LlmProvider, LlmRequest, LlmResponse, Message, ProviderError, ProviderMetadata, Usage,
+    LlmProvider, LlmRequest, LlmResponse, ProviderError, ProviderMetadata, Usage,
 };
 
 /// Local provider configuration.
@@ -126,21 +127,29 @@ impl LocalProvider {
             .unwrap_or_default();
 
         // Local servers may not always provide usage stats
-        let usage = response.usage.unwrap_or_else(|| LocalUsage {
+        let local_usage = response.usage.unwrap_or_else(|| LocalUsage {
             prompt_tokens: 0,
             completion_tokens: 0,
             total_tokens: 0,
         });
 
+        let model = response.model.unwrap_or_else(|| "unknown".to_string());
+        let usage = Usage {
+            prompt_tokens: local_usage.prompt_tokens,
+            completion_tokens: local_usage.completion_tokens,
+            total_tokens: local_usage.total_tokens,
+        };
+
+        // Local models have no API costs
+        let estimated_cost_usd = cost::get_local_pricing(&model)
+            .map(|pricing| pricing.calculate_cost(&usage));
+
         LlmResponse {
             content,
-            model: response.model.unwrap_or_else(|| "unknown".to_string()),
-            usage: Usage {
-                prompt_tokens: usage.prompt_tokens,
-                completion_tokens: usage.completion_tokens,
-                total_tokens: usage.total_tokens,
-            },
+            model,
+            usage,
             provider_id: self.metadata.id.clone(),
+            estimated_cost_usd,
         }
     }
 
@@ -320,6 +329,7 @@ struct LocalUsage {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::traits::Message;
 
     #[test]
     fn test_translate_request() {

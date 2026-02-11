@@ -1,4 +1,5 @@
 pub mod circuit_breaker;
+pub mod cost;
 pub mod registry;
 pub mod retry;
 pub mod traits;
