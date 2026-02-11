@@ -1,0 +1,35 @@
+# Default policy — applied to all tenants unless overridden.
+# This file is validated on load; malformed policies are rejected.
+
+[metadata]
+version = "1.0"
+description = "Default sovereign gateway policy"
+
+[data_rules]
+# Classification → routing constraint
+public = "external_allowed"
+internal = "regional_only"
+confidential = "local_only"
+restricted = "local_only"
+
+[providers.openai]
+region = "us-east-1"
+allowed = true
+priority = 2
+models = ["gpt-4o", "gpt-4o-mini"]
+
+[providers.local_llm]
+region = "local"
+allowed = true
+priority = 1
+models = ["llama-3", "mistral"]
+
+[quotas]
+max_tokens_per_request = 4096
+max_tokens_per_day = 1_000_000
+burst_requests_per_minute = 60
+
+[redaction]
+mode = "irreversible"
+# Categories that always trigger blocking (never just redaction)
+block_categories = ["national_id", "medical_record"]

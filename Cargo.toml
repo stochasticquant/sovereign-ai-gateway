@@ -1,0 +1,111 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/gateway-core",
+    "crates/gateway-server",
+    "crates/context-firewall",
+    "crates/policy-engine",
+    "crates/provider-adapters",
+    "crates/memory-service",
+    "crates/token-governor",
+    "crates/audit-log",
+    "crates/gateway-tests",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+authors = ["Sovereign AI Gateway Contributors"]
+repository = "https://github.com/TODO/sovereign-ai-gateway"
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# HTTP framework
+axum = { version = "0.8", features = ["macros"] }
+axum-extra = { version = "0.10", features = ["typed-header"] }
+tower = { version = "0.5", features = ["full"] }
+tower-http = { version = "0.6", features = ["cors", "trace", "timeout", "limit", "request-id", "util", "compression-gzip"] }
+hyper = { version = "1", features = ["full"] }
+
+# HTTP client
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream", "gzip"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+
+# Database
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "migrate"] }
+
+# Observability
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "fmt"] }
+tracing-opentelemetry = "0.28"
+opentelemetry = "0.27"
+opentelemetry_sdk = { version = "0.27", features = ["rt-tokio"] }
+opentelemetry-otlp = "0.27"
+metrics = "0.24"
+metrics-exporter-prometheus = "0.16"
+
+# Cryptography
+ring = "0.17"
+
+# UUID
+uuid = { version = "1", features = ["v4", "v7", "serde"] }
+
+# Date/time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Pattern matching (PII detection)
+regex = "1"
+aho-corasick = "1"
+
+# Config
+config = "0.14"
+
+# File watching
+notify = "7"
+
+# Async utilities
+futures = "0.3"
+tokio-stream = "0.1"
+async-trait = "0.1"
+bytes = "1"
+
+# Error handling
+thiserror = "2"
+anyhow = "1"
+
+# Testing
+wiremock = "0.6"
+proptest = "1"
+assert_matches = "1"
+tokio-test = "0.4"
+
+# Internal crates
+gateway-core = { path = "crates/gateway-core" }
+context-firewall = { path = "crates/context-firewall" }
+policy-engine = { path = "crates/policy-engine" }
+provider-adapters = { path = "crates/provider-adapters" }
+memory-service = { path = "crates/memory-service" }
+token-governor = { path = "crates/token-governor" }
+audit-log = { path = "crates/audit-log" }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+panic = "abort"
+
+[profile.dev]
+# Faster incremental builds
+opt-level = 0
+
+[profile.dev.package."*"]
+# Optimize deps even in dev for faster runtime
+opt-level = 2

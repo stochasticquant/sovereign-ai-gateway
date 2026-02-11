@@ -1,0 +1,15 @@
+# Cargo build configuration for Sovereign AI Gateway
+# Uses MSYS2 MinGW-w64 gcc as the linker since the system lacks MSVC C++ build tools.
+
+[target.x86_64-pc-windows-gnu]
+linker = "C:\\msys64\\mingw64\\bin\\gcc.exe"
+
+[build]
+# Use incremental compilation for faster dev builds
+incremental = true
+
+[profile.dev.build-override]
+opt-level = 0
+
+[net]
+git-fetch-with-cli = true

@@ -1,0 +1,30 @@
+[package]
+name = "gateway-tests"
+description = "Integration and end-to-end test harness"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+gateway-core = { workspace = true }
+context-firewall = { workspace = true }
+policy-engine = { workspace = true }
+provider-adapters = { workspace = true }
+memory-service = { workspace = true }
+token-governor = { workspace = true }
+audit-log = { workspace = true }
+
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+reqwest = { workspace = true }
+wiremock = { workspace = true }
+proptest = { workspace = true }
+assert_matches = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+
+[lib]
+# This crate is for tests only; no production binary depends on it.
+doctest = false

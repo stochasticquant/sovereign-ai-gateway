@@ -1,0 +1,17 @@
+# Production overrides — strict limits, JSON logs.
+
+[server]
+request_timeout_secs = 15
+max_request_body_bytes = 524_288  # 512 KB
+
+[database]
+max_connections = 50
+min_connections = 5
+
+[firewall]
+block_on_detection = true
+
+[telemetry]
+log_level = "info"
+log_format = "json"
+metrics_enabled = true

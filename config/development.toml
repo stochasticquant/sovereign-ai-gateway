@@ -1,0 +1,8 @@
+# Development overrides — human-readable logs, relaxed limits.
+
+[server]
+host = "127.0.0.1"
+
+[telemetry]
+log_level = "debug"
+log_format = "pretty"

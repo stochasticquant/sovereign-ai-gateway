@@ -1,0 +1,162 @@
+openapi: 3.1.0
+info:
+  title: Sovereign AI Gateway API
+  description: >-
+    Data sovereignty control plane for LLM traffic.
+    Enforces jurisdiction-aware policy routing, PII filtering,
+    and provides regulator-ready audit telemetry.
+  version: 0.1.0
+  license:
+    name: MIT OR Apache-2.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
+paths:
+  /v1/chat/completions:
+    post:
+      summary: Chat Completions
+      description: >-
+        Proxy chat completion requests to approved LLM providers.
+        Supports both synchronous JSON and SSE streaming (stream: true).
+      tags: [Chat]
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatCompletionRequest"
+      responses:
+        "200":
+          description: Successful completion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatCompletionResponse"
+            text/event-stream:
+              schema:
+                type: string
+        "403":
+          description: Blocked by policy or firewall
+        "429":
+          description: Rate limit or quota exceeded
+
+  /v1/embeddings:
+    post:
+      summary: Generate Embeddings
+      tags: [Embeddings]
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmbeddingRequest"
+      responses:
+        "200":
+          description: Successful embedding generation
+
+  /health:
+    get:
+      summary: Liveness probe
+      tags: [Health]
+      responses:
+        "200":
+          description: Gateway is alive
+
+  /ready:
+    get:
+      summary: Readiness probe
+      tags: [Health]
+      responses:
+        "200":
+          description: Gateway is ready to accept traffic
+
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      tags: [Observability]
+      responses:
+        "200":
+          description: Prometheus-formatted metrics
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: "Bearer <api-key>"
+
+  schemas:
+    ChatCompletionRequest:
+      type: object
+      required: [model, messages]
+      properties:
+        model:
+          type: string
+          example: gpt-4o
+        messages:
+          type: array
+          items:
+            type: object
+            required: [role, content]
+            properties:
+              role:
+                type: string
+                enum: [system, user, assistant]
+              content:
+                type: string
+        max_tokens:
+          type: integer
+        temperature:
+          type: number
+        stream:
+          type: boolean
+          default: false
+
+    ChatCompletionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        model:
+          type: string
+        choices:
+          type: array
+          items:
+            type: object
+            properties:
+              message:
+                type: object
+                properties:
+                  role:
+                    type: string
+                  content:
+                    type: string
+        usage:
+          type: object
+          properties:
+            prompt_tokens:
+              type: integer
+            completion_tokens:
+              type: integer
+            total_tokens:
+              type: integer
+
+    EmbeddingRequest:
+      type: object
+      required: [input]
+      properties:
+        model:
+          type: string
+        input:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string

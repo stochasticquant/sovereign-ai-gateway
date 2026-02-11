@@ -1,0 +1,46 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "cargo build",
+      "type": "shell",
+      "command": "cargo build",
+      "group": "build",
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "cargo test",
+      "type": "shell",
+      "command": "cargo nextest run",
+      "group": "test",
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "cargo clippy",
+      "type": "shell",
+      "command": "cargo clippy --workspace --all-targets -- -D warnings",
+      "group": "build",
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "cargo watch",
+      "type": "shell",
+      "command": "cargo watch -x 'clippy --workspace --all-targets' -x 'nextest run'",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "docker compose up",
+      "type": "shell",
+      "command": "docker compose -f deploy/docker/docker-compose.yml up -d",
+      "group": "none"
+    },
+    {
+      "label": "docker compose down",
+      "type": "shell",
+      "command": "docker compose -f deploy/docker/docker-compose.yml down",
+      "group": "none"
+    }
+  ]
+}

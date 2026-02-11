@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+  labels:
+    app: {{ .Chart.Name }}
+data:
+  GATEWAY_SERVER__HOST: "0.0.0.0"
+  GATEWAY_SERVER__PORT: "{{ .Values.service.port }}"
+  GATEWAY_TELEMETRY__LOG_LEVEL: "{{ .Values.config.logLevel }}"
+  GATEWAY_TELEMETRY__LOG_FORMAT: "{{ .Values.config.logFormat }}"
+  GATEWAY_TELEMETRY__METRICS_ENABLED: "{{ .Values.config.metricsEnabled }}"
+  GATEWAY_DATABASE__URL: "postgres://$(DB_USER):$(DB_PASSWORD)@{{ .Values.database.host }}:{{ .Values.database.port }}/{{ .Values.database.name }}"

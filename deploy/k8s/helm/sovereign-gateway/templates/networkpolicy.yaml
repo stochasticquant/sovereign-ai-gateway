@@ -1,0 +1,40 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app: {{ .Chart.Name }}
+spec:
+  podSelector:
+    matchLabels:
+      app: {{ .Chart.Name }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - ports:
+        - port: {{ .Values.service.port }}
+          protocol: TCP
+  egress:
+    # Allow DNS
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # Allow PostgreSQL
+    - ports:
+        - port: {{ .Values.database.port }}
+          protocol: TCP
+    # Allow Qdrant
+    - ports:
+        - port: {{ .Values.qdrant.httpPort }}
+          protocol: TCP
+        - port: {{ .Values.qdrant.grpcPort }}
+          protocol: TCP
+    # Allow HTTPS to LLM providers
+    - ports:
+        - port: 443
+          protocol: TCP
+{{- end }}

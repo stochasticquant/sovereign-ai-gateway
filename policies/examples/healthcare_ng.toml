@@ -1,0 +1,31 @@
+# Policy: Nigerian Healthcare Tenant
+# All medical data must stay local. No external routing for any classified data.
+
+[metadata]
+version = "1.0"
+description = "Healthcare data sovereignty policy — Nigeria"
+
+[data_rules]
+public = "regional_only"
+internal = "local_only"
+confidential = "local_only"
+restricted = "local_only"
+
+[providers.openai]
+region = "us-east-1"
+allowed = false
+
+[providers.local_llm]
+region = "ng-west-1"
+allowed = true
+priority = 1
+models = ["llama-3-medical", "mistral"]
+
+[quotas]
+max_tokens_per_request = 2048
+max_tokens_per_day = 500_000
+burst_requests_per_minute = 30
+
+[redaction]
+mode = "irreversible"
+block_categories = ["national_id", "medical_record", "drug_name", "diagnosis_code"]

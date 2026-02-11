@@ -1,0 +1,38 @@
+# Policy: Kenyan Fintech Tenant
+# Financial data stays in East Africa region. Public queries may use external providers.
+
+[metadata]
+version = "1.0"
+description = "Fintech data sovereignty policy — Kenya"
+
+[data_rules]
+public = "external_allowed"
+internal = "regional_only"
+confidential = "regional_only"
+restricted = "local_only"
+
+[providers.openai]
+region = "us-east-1"
+allowed = true
+priority = 3
+
+[providers.azure_eastafrica]
+region = "ke-east-1"
+allowed = true
+priority = 1
+models = ["gpt-4o"]
+
+[providers.local_llm]
+region = "ke-west-1"
+allowed = true
+priority = 2
+models = ["llama-3", "mistral"]
+
+[quotas]
+max_tokens_per_request = 4096
+max_tokens_per_day = 2_000_000
+burst_requests_per_minute = 120
+
+[redaction]
+mode = "reversible"
+block_categories = ["national_id", "bank_account"]

@@ -1,0 +1,3 @@
+[build]
+# Use a target directory outside OneDrive to avoid permission issues on Linux
+target-dir = "/tmp/sovereign-gateway-target"

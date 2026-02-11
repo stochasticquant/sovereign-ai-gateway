@@ -1,0 +1,35 @@
+# Policy: South African Government Tenant
+# Maximum restriction. All data local. No external routing permitted.
+
+[metadata]
+version = "1.0"
+description = "Government data sovereignty policy — South Africa"
+
+[data_rules]
+public = "local_only"
+internal = "local_only"
+confidential = "local_only"
+restricted = "local_only"
+
+[providers.openai]
+region = "us-east-1"
+allowed = false
+
+[providers.azure_southafrica]
+region = "za-north-1"
+allowed = false
+
+[providers.local_llm]
+region = "za-west-1"
+allowed = true
+priority = 1
+models = ["llama-3", "mistral"]
+
+[quotas]
+max_tokens_per_request = 2048
+max_tokens_per_day = 200_000
+burst_requests_per_minute = 20
+
+[redaction]
+mode = "irreversible"
+block_categories = ["national_id", "medical_record", "bank_account", "tax_id"]

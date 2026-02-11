@@ -1,0 +1,48 @@
+[package]
+name = "gateway-server"
+description = "HTTP server, middleware, and request routing for the Sovereign AI Gateway"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "sovereign-gateway"
+path = "src/main.rs"
+
+[dependencies]
+gateway-core = { workspace = true }
+context-firewall = { workspace = true }
+policy-engine = { workspace = true }
+provider-adapters = { workspace = true }
+memory-service = { workspace = true }
+token-governor = { workspace = true }
+audit-log = { workspace = true }
+
+tokio = { workspace = true }
+axum = { workspace = true }
+axum-extra = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+hyper = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tracing-opentelemetry = { workspace = true }
+opentelemetry = { workspace = true }
+opentelemetry_sdk = { workspace = true }
+metrics = { workspace = true }
+metrics-exporter-prometheus = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+futures = { workspace = true }
+tokio-stream = { workspace = true }
+bytes = { workspace = true }
+thiserror = { workspace = true }
+sqlx = { workspace = true }
+
+[dev-dependencies]
+wiremock = { workspace = true }
+tokio-test = { workspace = true }
+reqwest = { workspace = true }

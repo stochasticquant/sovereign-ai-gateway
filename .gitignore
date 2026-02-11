@@ -1,0 +1,63 @@
+# Rust build artifacts
+/target/
+**/target/
+
+# Cargo lock is committed for binary projects
+# Cargo.lock — DO commit this file
+
+# IDE / Editor
+.idea/
+*.iml
+.vscode/settings.json
+.vscode/launch.json
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.p12
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker volumes (local dev)
+.docker-data/
+
+# OS files
+*.log
+*.pid
+*.seed
+
+# Coverage & profiling
+coverage/
+*.profraw
+*.profdata
+lcov.info
+tarpaulin-report.html
+
+# Temporary installer scripts (Windows-specific)
+install_rust.ps1
+install_tools.ps1
+verify_rust.ps1
+find_msvc.ps1
+fix_linker.ps1
+install_msvc.ps1
+
+# ONNX models (large binary files — use Git LFS or download scripts)
+models/*.onnx
+models/*.bin
+
+# Backup files
+*.bak
+*.orig

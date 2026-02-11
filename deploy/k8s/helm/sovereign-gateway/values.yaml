@@ -1,0 +1,50 @@
+replicaCount: 2
+
+image:
+  repository: sovereign-gateway
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+podDisruptionBudget:
+  minAvailable: 1
+
+config:
+  logLevel: info
+  logFormat: json
+  metricsEnabled: true
+
+database:
+  host: postgres
+  port: 5432
+  name: sovereign_gateway
+  existingSecret: sovereign-gateway-db-credentials
+
+qdrant:
+  host: qdrant
+  httpPort: 6333
+  grpcPort: 6334
+
+serviceAccount:
+  create: true
+  annotations: {}
+
+networkPolicy:
+  enabled: true

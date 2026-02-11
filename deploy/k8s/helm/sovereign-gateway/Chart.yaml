@@ -1,0 +1,14 @@
+apiVersion: v2
+name: sovereign-gateway
+description: Sovereign AI Gateway — data sovereignty control plane for LLM traffic
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+maintainers:
+  - name: Sovereign AI Gateway Contributors
+keywords:
+  - ai
+  - gateway
+  - llm
+  - data-sovereignty
+  - policy-engine
