@@ -19,6 +19,7 @@ futures = { workspace = true }
 tokio-stream = { workspace = true }
 bytes = { workspace = true }
 chrono = { workspace = true }
+rand = { workspace = true }
 
 [dev-dependencies]
 wiremock = { workspace = true }

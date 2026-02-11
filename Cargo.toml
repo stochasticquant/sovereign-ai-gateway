@@ -62,6 +62,9 @@ uuid = { version = "1", features = ["v4", "v7", "serde"] }
 # Date/time
 chrono = { version = "0.4", features = ["serde"] }
 
+# Random number generation
+rand = "0.8"
+
 # Pattern matching (PII detection)
 regex = "1"
 aho-corasick = "1"
