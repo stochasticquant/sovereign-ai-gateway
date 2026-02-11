@@ -93,6 +93,15 @@ pub struct CircuitBreaker {
     state_changes: Arc<AtomicU64>, // Metric: count of state transitions
 }
 
+impl std::fmt::Debug for CircuitBreaker {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CircuitBreaker")
+            .field("config", &self.config)
+            .field("state_changes", &self.state_change_count())
+            .finish_non_exhaustive()
+    }
+}
+
 impl CircuitBreaker {
     /// Creates a new circuit breaker with the given configuration.
     pub fn new(config: CircuitBreakerConfig) -> Self {
