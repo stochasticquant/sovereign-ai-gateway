@@ -13,10 +13,10 @@ pub struct PIIDetector {
 }
 
 /// A single PII pattern with its regex and metadata.
-struct PIIPattern {
-    pii_type: PIIType,
-    regex: Regex,
-    confidence: f64,
+pub(crate) struct PIIPattern {
+    pub(crate) pii_type: PIIType,
+    pub(crate) regex: Regex,
+    pub(crate) confidence: f64,
 }
 
 impl Default for PIIDetector {
@@ -28,7 +28,7 @@ impl Default for PIIDetector {
 impl PIIDetector {
     /// Create a new PII detector with all default patterns.
     pub fn new() -> Self {
-        let patterns = vec![
+        let mut patterns = vec![
             // Email addresses
             PIIPattern {
                 pii_type: PIIType::Email,
@@ -68,6 +68,11 @@ impl PIIDetector {
             },
         ];
 
+        // Add domain-specific patterns
+        patterns.extend(crate::patterns::africa::africa_patterns());
+        patterns.extend(crate::patterns::healthcare::healthcare_patterns());
+        patterns.extend(crate::patterns::financial::financial_patterns());
+
         Self { patterns }
     }
 
@@ -96,6 +101,14 @@ impl PIIDetector {
                     }
                     PIIType::SSN => {
                         let valid = !is_obviously_fake_ssn(matched_text);
+                        (valid, if valid { pattern.confidence } else { 0.0 })
+                    }
+                    PIIType::SouthAfricanId => {
+                        let valid = validate_south_african_id(matched_text);
+                        (valid, if valid { 0.90 } else { 0.0 })
+                    }
+                    PIIType::KenyanNationalId => {
+                        let valid = !is_fake_digit_sequence(matched_text);
                         (valid, if valid { pattern.confidence } else { 0.0 })
                     }
                     _ => (true, pattern.confidence),
@@ -147,8 +160,8 @@ impl PIIDetector {
     }
 }
 
-/// Luhn algorithm for credit card validation.
-fn luhn_check(number: &str) -> bool {
+/// Luhn algorithm for credit card and ID validation.
+pub(crate) fn luhn_check(number: &str) -> bool {
     let mut sum = 0;
     let mut double = false;
 
@@ -178,6 +191,62 @@ fn is_obviously_fake_ssn(ssn: &str) -> bool {
     let fake_patterns = ["000-00-0000", "111-11-1111", "123-45-6789", "999-99-9999"];
 
     fake_patterns.contains(&ssn)
+}
+
+/// Validate a South African ID number (13 digits with date and Luhn checksum).
+fn validate_south_african_id(id: &str) -> bool {
+    let digits: String = id.chars().filter(|c| c.is_ascii_digit()).collect();
+    if digits.len() != 13 {
+        return false;
+    }
+
+    // First 6 digits must be a valid date (YYMMDD)
+    let yy: u32 = match digits[0..2].parse() {
+        Ok(v) => v,
+        Err(_) => return false,
+    };
+    let mm: u32 = match digits[2..4].parse() {
+        Ok(v) => v,
+        Err(_) => return false,
+    };
+    let dd: u32 = match digits[4..6].parse() {
+        Ok(v) => v,
+        Err(_) => return false,
+    };
+
+    // Basic date validation (YY is 00-99, MM is 01-12, DD is 01-31)
+    let _ = yy; // Any year is valid
+    if !(1..=12).contains(&mm) || !(1..=31).contains(&dd) {
+        return false;
+    }
+
+    // Luhn check on full 13 digits
+    luhn_check(&digits)
+}
+
+/// Check if a digit sequence is obviously fake (all same digit or sequential).
+fn is_fake_digit_sequence(number: &str) -> bool {
+    let digits: Vec<char> = number.chars().filter(|c| c.is_ascii_digit()).collect();
+    if digits.is_empty() {
+        return true;
+    }
+
+    // All same digit
+    if digits.iter().all(|&c| c == digits[0]) {
+        return true;
+    }
+
+    // Sequential ascending (1234567, 12345678)
+    let is_sequential = digits.windows(2).all(|w| {
+        let a = w[0].to_digit(10).unwrap_or(0);
+        let b = w[1].to_digit(10).unwrap_or(0);
+        b == a + 1
+    });
+    if is_sequential {
+        return true;
+    }
+
+    false
 }
 
 #[cfg(test)]
@@ -308,5 +377,191 @@ mod tests {
         let report = detector.detect(text);
 
         assert!(report.detections.is_empty());
+    }
+
+    // --- Africa-specific pattern tests ---
+
+    #[test]
+    fn test_detect_south_african_id() {
+        let detector = PIIDetector::new();
+        // Valid SA ID: DOB=1988-01-01, Luhn-valid 13-digit number
+        let text = "ID: 8801015009080";
+
+        let report = detector.detect(text);
+
+        let sa_id: Vec<_> = report
+            .detections
+            .iter()
+            .filter(|d| matches!(d.pii_type, PIIType::SouthAfricanId))
+            .collect();
+
+        assert!(!sa_id.is_empty(), "Should detect SA ID");
+        assert_eq!(sa_id[0].original, "8801015009080");
+    }
+
+    #[test]
+    fn test_reject_invalid_south_african_id() {
+        let detector = PIIDetector::new();
+        // Invalid: month 13 doesn't exist
+        let text = "ID: 8813015009087";
+
+        let report = detector.detect(text);
+
+        let sa_id: Vec<_> = report
+            .detections
+            .iter()
+            .filter(|d| matches!(d.pii_type, PIIType::SouthAfricanId))
+            .collect();
+
+        assert!(sa_id.is_empty(), "Should reject invalid SA ID date");
+    }
+
+    #[test]
+    fn test_detect_nigerian_bvn() {
+        let detector = PIIDetector::new();
+        let text = "BVN: 22234567891";
+
+        let report = detector.detect(text);
+
+        let bvn: Vec<_> = report
+            .detections
+            .iter()
+            .filter(|d| matches!(d.pii_type, PIIType::NigerianBVN))
+            .collect();
+
+        assert!(!bvn.is_empty(), "Should detect Nigerian BVN");
+    }
+
+    #[test]
+    fn test_detect_kenyan_national_id() {
+        let detector = PIIDetector::new();
+        let text = "National ID: 31245678";
+
+        let report = detector.detect(text);
+
+        let ke_id: Vec<_> = report
+            .detections
+            .iter()
+            .filter(|d| matches!(d.pii_type, PIIType::KenyanNationalId))
+            .collect();
+
+        assert!(!ke_id.is_empty(), "Should detect Kenyan National ID");
+    }
+
+    #[test]
+    fn test_reject_fake_kenyan_id() {
+        let detector = PIIDetector::new();
+        // All same digits should be rejected
+        let text = "ID: 11111111";
+
+        let report = detector.detect(text);
+
+        let ke_id: Vec<_> = report
+            .detections
+            .iter()
+            .filter(|d| matches!(d.pii_type, PIIType::KenyanNationalId))
+            .collect();
+
+        assert!(ke_id.is_empty(), "Should reject fake Kenyan ID");
+    }
+
+    #[test]
+    fn test_detect_mobile_money() {
+        let detector = PIIDetector::new();
+        let text = "M-Pesa: +254712345678, MTN: +2348012345678";
+
+        let report = detector.detect(text);
+
+        let mm: Vec<_> = report
+            .detections
+            .iter()
+            .filter(|d| matches!(d.pii_type, PIIType::MobileMoney))
+            .collect();
+
+        assert!(mm.len() >= 2, "Should detect M-Pesa and MTN numbers");
+    }
+
+    // --- Healthcare pattern tests ---
+
+    #[test]
+    fn test_detect_medical_record_number() {
+        let detector = PIIDetector::new();
+        let text = "Patient MRN: 12345678";
+
+        let report = detector.detect(text);
+
+        let mrn: Vec<_> = report
+            .detections
+            .iter()
+            .filter(|d| matches!(d.pii_type, PIIType::MedicalRecord))
+            .collect();
+
+        assert!(!mrn.is_empty(), "Should detect MRN");
+    }
+
+    #[test]
+    fn test_detect_icd10_code() {
+        let detector = PIIDetector::new();
+        let text = "Diagnosis: J18.9 (pneumonia), E11 (diabetes)";
+
+        let report = detector.detect(text);
+
+        let icd: Vec<_> = report
+            .detections
+            .iter()
+            .filter(|d| matches!(d.pii_type, PIIType::DiagnosisCode))
+            .collect();
+
+        assert!(icd.len() >= 2, "Should detect ICD-10 codes");
+    }
+
+    #[test]
+    fn test_detect_drug_name() {
+        let detector = PIIDetector::new();
+        let text = "The patient takes metformin and amoxicillin daily.";
+
+        let report = detector.detect(text);
+
+        let drugs: Vec<_> = report
+            .detections
+            .iter()
+            .filter(|d| matches!(d.pii_type, PIIType::DrugName))
+            .collect();
+
+        assert!(drugs.len() >= 2, "Should detect drug names");
+    }
+
+    // --- Financial pattern tests ---
+
+    #[test]
+    fn test_detect_iban() {
+        let detector = PIIDetector::new();
+        let text = "Wire to IBAN: GB29 NWBK 6016 1331 9268 19";
+
+        let report = detector.detect(text);
+
+        let iban: Vec<_> = report
+            .detections
+            .iter()
+            .filter(|d| matches!(d.pii_type, PIIType::BankAccount))
+            .collect();
+
+        assert!(!iban.is_empty(), "Should detect IBAN");
+    }
+
+    #[test]
+    fn test_detect_swift_code() {
+        let detector = PIIDetector::new();
+        let text = "SWIFT code: DEUTDEFF";
+
+        let report = detector.detect(text);
+
+        let swift: Vec<_> = report
+            .detections
+            .iter()
+            .filter(|d| matches!(d.pii_type, PIIType::BankAccount))
+            .collect();
+
+        assert!(!swift.is_empty(), "Should detect SWIFT/BIC code");
     }
 }

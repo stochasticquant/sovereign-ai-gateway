@@ -1,6 +1,5 @@
-// TODO(phase-2): General PII patterns.
-// - Email addresses
-// - Credit card numbers (Luhn validated)
-// - Social Security Numbers
-// - IP addresses
-// - URLs with credentials
+//! General PII patterns.
+//!
+//! General-purpose patterns (email, credit card, SSN, IP, API key) are defined
+//! directly in `detector.rs` as the base pattern set. This module is reserved
+//! for future general-purpose pattern extensions.
