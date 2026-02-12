@@ -329,10 +329,12 @@ mod tests {
 
         let result = policy.validate();
         assert!(!result.valid);
-        assert!(result
-            .errors
-            .iter()
-            .any(|e| e.contains("at least one provider")));
+        assert!(
+            result
+                .errors
+                .iter()
+                .any(|e| e.contains("at least one provider"))
+        );
     }
 
     #[test]
@@ -342,10 +344,12 @@ mod tests {
 
         let result = policy.validate();
         assert!(!result.valid);
-        assert!(result
-            .errors
-            .iter()
-            .any(|e| e.contains("max_tokens_per_request")));
+        assert!(
+            result
+                .errors
+                .iter()
+                .any(|e| e.contains("max_tokens_per_request"))
+        );
     }
 
     #[test]

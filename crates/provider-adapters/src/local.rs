@@ -14,10 +14,8 @@ use tracing::{debug, instrument};
 
 use crate::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig};
 use crate::cost;
-use crate::retry::{with_retry, RetryConfig};
-use crate::traits::{
-    LlmProvider, LlmRequest, LlmResponse, ProviderError, ProviderMetadata, Usage,
-};
+use crate::retry::{RetryConfig, with_retry};
+use crate::traits::{LlmProvider, LlmRequest, LlmResponse, ProviderError, ProviderMetadata, Usage};
 
 /// Local provider configuration.
 #[derive(Debug, Clone)]
@@ -127,7 +125,7 @@ impl LocalProvider {
             .unwrap_or_default();
 
         // Local servers may not always provide usage stats
-        let local_usage = response.usage.unwrap_or_else(|| LocalUsage {
+        let local_usage = response.usage.unwrap_or(LocalUsage {
             prompt_tokens: 0,
             completion_tokens: 0,
             total_tokens: 0,
@@ -141,8 +139,8 @@ impl LocalProvider {
         };
 
         // Local models have no API costs
-        let estimated_cost_usd = cost::get_local_pricing(&model)
-            .map(|pricing| pricing.calculate_cost(&usage));
+        let estimated_cost_usd =
+            cost::get_local_pricing(&model).map(|pricing| pricing.calculate_cost(&usage));
 
         LlmResponse {
             content,
@@ -171,7 +169,8 @@ impl LocalProvider {
 
         // Add API key if configured
         if let Some(ref api_key) = self.config.api_key {
-            request_builder = request_builder.header("Authorization", format!("Bearer {}", api_key));
+            request_builder =
+                request_builder.header("Authorization", format!("Bearer {}", api_key));
         }
 
         let response = request_builder
@@ -246,7 +245,8 @@ impl LlmProvider for LocalProvider {
         let mut request_builder = self.client.get(&url);
 
         if let Some(ref api_key) = self.config.api_key {
-            request_builder = request_builder.header("Authorization", format!("Bearer {}", api_key));
+            request_builder =
+                request_builder.header("Authorization", format!("Bearer {}", api_key));
         }
 
         let response = request_builder.send().await.map_err(|e| {
@@ -267,7 +267,7 @@ impl LlmProvider for LocalProvider {
         } else {
             Err(ProviderError::ApiError {
                 status: response.status().as_u16(),
-                message: format!("Local server returned error status"),
+                message: "Local server returned error status".to_string(),
             })
         }
     }
@@ -303,6 +303,7 @@ struct LocalMessage {
 
 /// Local Chat Completion response.
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 struct LocalChatResponse {
     id: Option<String>,
     model: Option<String>,
@@ -312,6 +313,7 @@ struct LocalChatResponse {
 
 /// A single choice in the response.
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 struct LocalChoice {
     index: u32,
     message: Option<LocalMessage>,

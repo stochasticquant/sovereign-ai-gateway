@@ -58,10 +58,14 @@ async fn main() {
 
     // Bind to address
     let addr = SocketAddr::from((
-        config.server.host.parse::<std::net::IpAddr>().unwrap_or_else(|_| {
-            error!("Invalid host address in configuration");
-            std::process::exit(1);
-        }),
+        config
+            .server
+            .host
+            .parse::<std::net::IpAddr>()
+            .unwrap_or_else(|_| {
+                error!("Invalid host address in configuration");
+                std::process::exit(1);
+            }),
         config.server.port,
     ));
 

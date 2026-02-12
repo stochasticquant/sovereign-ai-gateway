@@ -36,7 +36,10 @@ impl Default for RetryConfig {
 /// Executes an async operation with retry logic.
 ///
 /// Returns the successful result or the last error encountered.
-pub async fn with_retry<F, Fut, T>(config: &RetryConfig, mut operation: F) -> Result<T, ProviderError>
+pub async fn with_retry<F, Fut, T>(
+    config: &RetryConfig,
+    mut operation: F,
+) -> Result<T, ProviderError>
 where
     F: FnMut() -> Fut,
     Fut: std::future::Future<Output = Result<T, ProviderError>>,
@@ -213,8 +216,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_with_retry_success_on_first_attempt() {
-        use std::sync::atomic::{AtomicU32, Ordering};
         use std::sync::Arc;
+        use std::sync::atomic::{AtomicU32, Ordering};
 
         let config = RetryConfig::default();
         let call_count = Arc::new(AtomicU32::new(0));
@@ -235,8 +238,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_with_retry_success_after_retries() {
-        use std::sync::atomic::{AtomicU32, Ordering};
         use std::sync::Arc;
+        use std::sync::atomic::{AtomicU32, Ordering};
 
         let config = RetryConfig {
             max_retries: 3,
@@ -266,8 +269,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_with_retry_exhausted() {
-        use std::sync::atomic::{AtomicU32, Ordering};
         use std::sync::Arc;
+        use std::sync::atomic::{AtomicU32, Ordering};
 
         let config = RetryConfig {
             max_retries: 2,
@@ -293,8 +296,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_with_retry_non_retryable_error() {
-        use std::sync::atomic::{AtomicU32, Ordering};
         use std::sync::Arc;
+        use std::sync::atomic::{AtomicU32, Ordering};
 
         let config = RetryConfig::default();
         let call_count = Arc::new(AtomicU32::new(0));

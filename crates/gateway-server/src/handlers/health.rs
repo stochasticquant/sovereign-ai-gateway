@@ -2,10 +2,10 @@
 
 use crate::state::AppState;
 use axum::{
+    Json,
     extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use serde_json::json;
 use tracing::warn;
@@ -26,10 +26,7 @@ pub async fn health() -> impl IntoResponse {
 /// Used by Kubernetes to determine if pod should receive traffic.
 pub async fn ready(State(state): State<AppState>) -> Response {
     // Check database connectivity
-    let db_healthy = match sqlx::query("SELECT 1")
-        .fetch_one(&state.db)
-        .await
-    {
+    let db_healthy = match sqlx::query("SELECT 1").fetch_one(&state.db).await {
         Ok(_) => true,
         Err(e) => {
             warn!("Database health check failed: {}", e);

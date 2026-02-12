@@ -28,11 +28,7 @@ pub const RETRY_AFTER: &str = "retry-after";
 /// 3. Checks if the request would exceed quotas
 /// 4. Returns 429 Too Many Requests if quota would be exceeded
 /// 5. Allows the request to proceed if within quota
-pub async fn quota_middleware(
-    State(state): State<AppState>,
-    mut req: Request,
-    next: Next,
-) -> Response {
+pub async fn quota_middleware(State(state): State<AppState>, req: Request, next: Next) -> Response {
     // Extract tenant_id from extensions (set by auth middleware)
     let tenant_id = match req.extensions().get::<Uuid>() {
         Some(id) => *id,
@@ -107,11 +103,7 @@ pub async fn quota_middleware(
                 "Failed to check quota"
             );
             // On error, fail closed - reject the request
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Failed to check quota",
-            )
-                .into_response()
+            (StatusCode::INTERNAL_SERVER_ERROR, "Failed to check quota").into_response()
         }
     }
 }

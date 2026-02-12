@@ -1,6 +1,5 @@
 //! Integration test for the complete auth → quota → handler pipeline.
 
-use serde_json::json;
 use sha2::{Digest, Sha256};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -81,7 +80,10 @@ async fn set_tenant_quota(
         max_concurrent_requests: None,
     };
 
-    enforcer.set_quota(quota).await.expect("Failed to set quota");
+    enforcer
+        .set_quota(quota)
+        .await
+        .expect("Failed to set quota");
 }
 
 /// Helper to cleanup test tenant.
@@ -99,7 +101,7 @@ async fn test_auth_quota_pipeline_success() {
 
     // Create tenant and API key
     let tenant_id = create_test_tenant(&db, "test-pipeline-success").await;
-    let api_key = create_test_api_key(&db, tenant_id, "test-key").await;
+    let _api_key = create_test_api_key(&db, tenant_id, "test-key").await;
 
     // Set generous quota
     set_tenant_quota(&db, tenant_id, Some(100_000), Some(4000)).await;
@@ -140,7 +142,7 @@ async fn test_full_chat_request_flow() {
 
     // Create tenant with quota
     let tenant_id = create_test_tenant(&db, "test-chat-flow").await;
-    let api_key = create_test_api_key(&db, tenant_id, "chat-key").await;
+    let _api_key = create_test_api_key(&db, tenant_id, "chat-key").await;
     set_tenant_quota(&db, tenant_id, Some(10_000), Some(2000)).await;
 
     // TODO: Start gateway server, make request, verify:

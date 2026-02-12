@@ -23,7 +23,10 @@ pub enum PolicyDecision {
     },
 
     /// Request is blocked. The reason is logged and returned to the caller.
-    Block { reason: String, violation: PolicyViolation },
+    Block {
+        reason: String,
+        violation: PolicyViolation,
+    },
 
     /// Request should be degraded to a fallback provider.
     Degrade {

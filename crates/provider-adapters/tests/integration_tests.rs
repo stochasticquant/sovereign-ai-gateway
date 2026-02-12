@@ -600,7 +600,9 @@ async fn test_registry_multiple_providers() {
         circuit_breaker_config: CircuitBreakerConfig::default(),
     };
     let unhealthy_provider = Arc::new(OpenAiProvider::new(unhealthy_config).unwrap());
-    registry.register("openai-unhealthy", unhealthy_provider).await;
+    registry
+        .register("openai-unhealthy", unhealthy_provider)
+        .await;
 
     // Run health checks twice to establish status
     registry.check_all_now().await;
@@ -614,10 +616,7 @@ async fn test_registry_multiple_providers() {
 
     // Verify individual statuses
     assert_eq!(
-        registry
-            .get_health_status("openai-healthy")
-            .await
-            .unwrap(),
+        registry.get_health_status("openai-healthy").await.unwrap(),
         HealthStatus::Healthy
     );
     assert_eq!(

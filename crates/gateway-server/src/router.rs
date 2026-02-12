@@ -2,17 +2,13 @@
 
 use crate::{handlers, middleware, state::AppState};
 use axum::{
+    Router,
     http::StatusCode,
     middleware as axum_middleware,
     routing::{get, post},
-    Router,
 };
 use std::time::Duration;
-use tower_http::{
-    cors::CorsLayer,
-    timeout::TimeoutLayer,
-    trace::TraceLayer,
-};
+use tower_http::{cors::CorsLayer, timeout::TimeoutLayer, trace::TraceLayer};
 
 /// Build the main application router with all routes and middleware.
 pub fn build_router(state: AppState) -> Router {

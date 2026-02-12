@@ -5,12 +5,11 @@
 //! Pipeline: auth → quota → firewall → policy → route → provider → audit → token tracking
 
 use axum::{
-    extract::State,
-    http::StatusCode,
-    response::{IntoResponse, Json, Response},
     Extension,
+    extract::State,
+    response::{IntoResponse, Json, Response},
 };
-use provider_adapters::{registry::ProviderRegistry, traits::LlmRequest};
+use provider_adapters::traits::LlmRequest;
 use serde_json::json;
 use token_governor::UsageIncrement;
 use uuid::Uuid;
@@ -41,7 +40,8 @@ pub async fn chat_completions(
 
     // Simulated response for now
     // TODO(phase-7): Actually call the provider
-    let response_content = "This is a placeholder response. Provider integration coming in phase-7.";
+    let response_content =
+        "This is a placeholder response. Provider integration coming in phase-7.";
 
     // Simulated token usage
     let prompt_tokens = 10u32;

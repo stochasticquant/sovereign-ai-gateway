@@ -12,7 +12,7 @@ use tracing::{debug, instrument};
 
 use crate::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig};
 use crate::cost;
-use crate::retry::{with_retry, RetryConfig};
+use crate::retry::{RetryConfig, with_retry};
 use crate::traits::{
     LlmProvider, LlmRequest, LlmResponse, Message, ProviderError, ProviderMetadata, Usage,
 };
@@ -94,7 +94,10 @@ impl AnthropicProvider {
     }
 
     /// Translates internal request to Anthropic API format.
-    fn translate_request(&self, request: &LlmRequest) -> (AnthropicMessagesRequest, Option<String>) {
+    fn translate_request(
+        &self,
+        request: &LlmRequest,
+    ) -> (AnthropicMessagesRequest, Option<String>) {
         // Anthropic separates system message from conversation messages
         let mut system_message: Option<String> = None;
         let mut messages = Vec::new();
@@ -192,10 +195,8 @@ impl AnthropicProvider {
 
         // Handle different status codes
         if status.is_success() {
-            let anthropic_response: AnthropicMessagesResponse = response
-                .json()
-                .await
-                .map_err(|e| {
+            let anthropic_response: AnthropicMessagesResponse =
+                response.json().await.map_err(|e| {
                     ProviderError::RequestFailed(format!("Failed to parse response: {}", e))
                 })?;
 
@@ -284,6 +285,7 @@ struct AnthropicMessage {
 
 /// Anthropic Messages API response.
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 struct AnthropicMessagesResponse {
     id: String,
     #[serde(rename = "type")]
@@ -297,6 +299,7 @@ struct AnthropicMessagesResponse {
 
 /// Content block in Anthropic response.
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 struct AnthropicContentBlock {
     #[serde(rename = "type")]
     block_type: String,
@@ -393,10 +396,7 @@ mod tests {
 
         let result = AnthropicProvider::new(config);
         assert!(result.is_err());
-        assert!(matches!(
-            result.unwrap_err(),
-            ProviderError::AuthError(_)
-        ));
+        assert!(matches!(result.unwrap_err(), ProviderError::AuthError(_)));
     }
 
     #[test]
@@ -410,11 +410,15 @@ mod tests {
         let metadata = provider.metadata();
         assert_eq!(metadata.id, "anthropic");
         assert_eq!(metadata.name, "Anthropic Claude");
-        assert!(metadata
-            .models
-            .contains(&"claude-3-5-sonnet-20241022".to_string()));
-        assert!(metadata
-            .models
-            .contains(&"claude-3-opus-20240229".to_string()));
+        assert!(
+            metadata
+                .models
+                .contains(&"claude-3-5-sonnet-20241022".to_string())
+        );
+        assert!(
+            metadata
+                .models
+                .contains(&"claude-3-opus-20240229".to_string())
+        );
     }
 }

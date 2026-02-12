@@ -9,7 +9,7 @@ use sqlx::PgPool;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tokio::time::{interval, Duration};
+use tokio::time::{Duration, interval};
 use tracing::{debug, error, info, instrument, warn};
 
 /// Retention policy for audit logs.
@@ -95,7 +95,10 @@ impl RetentionManager {
         .fetch_all(&self.db_pool)
         .await
         .map_err(|e| {
-            warn!("Failed to load retention policies (table may not exist): {}", e);
+            warn!(
+                "Failed to load retention policies (table may not exist): {}",
+                e
+            );
             GatewayError::Internal(format!("Failed to load retention policies: {}", e))
         })?;
 
@@ -107,7 +110,10 @@ impl RetentionManager {
             policies.insert(tenant_id, policy);
         }
 
-        info!("Loaded {} tenant-specific retention policies", policies.len());
+        info!(
+            "Loaded {} tenant-specific retention policies",
+            policies.len()
+        );
 
         Ok(())
     }
@@ -201,10 +207,7 @@ impl RetentionManager {
                                 deleted_count, tenant_id.0, retention_days
                             );
                         } else {
-                            debug!(
-                                "No old audit entries to delete for tenant {}",
-                                tenant_id.0
-                            );
+                            debug!("No old audit entries to delete for tenant {}", tenant_id.0);
                         }
                     }
                     Err(e) => {

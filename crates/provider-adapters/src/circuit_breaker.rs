@@ -14,8 +14,8 @@
 //!   └────[success]──── Half-Open
 //! ```
 
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 use tracing::{info, warn};
@@ -113,7 +113,7 @@ impl CircuitBreaker {
     }
 
     /// Creates a circuit breaker with default configuration.
-    pub fn default() -> Self {
+    pub fn with_defaults() -> Self {
         Self::new(CircuitBreakerConfig::default())
     }
 
@@ -264,7 +264,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_circuit_starts_closed() {
-        let cb = CircuitBreaker::default();
+        let cb = CircuitBreaker::with_defaults();
         assert_eq!(cb.state().await, CircuitState::Closed);
         assert!(cb.before_request().await.is_ok());
     }

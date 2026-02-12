@@ -1,7 +1,9 @@
 //! End-to-end tests for token quota enforcement.
 
 use chrono::Utc;
-use token_governor::{QuotaCheckRequest, QuotaCheckResult, QuotaEnforcer, TenantQuota, TokenCounter, UsageIncrement};
+use token_governor::{
+    QuotaCheckRequest, QuotaCheckResult, QuotaEnforcer, TenantQuota, TokenCounter, UsageIncrement,
+};
 use uuid::Uuid;
 
 /// Helper to create a test database pool.
@@ -126,7 +128,10 @@ async fn test_quota_check_exceeds_daily_limit() {
 
     let result = enforcer.check_quota(request).await.unwrap();
     match result {
-        QuotaCheckResult::Denied { reason, retry_after_secs } => {
+        QuotaCheckResult::Denied {
+            reason,
+            retry_after_secs,
+        } => {
             assert!(reason.contains("exceed daily token limit"));
             assert!(retry_after_secs.is_some());
         }
@@ -162,7 +167,10 @@ async fn test_quota_check_exceeds_per_request_limit() {
 
     let result = enforcer.check_quota(request).await.unwrap();
     match result {
-        QuotaCheckResult::Denied { reason, retry_after_secs } => {
+        QuotaCheckResult::Denied {
+            reason,
+            retry_after_secs,
+        } => {
             assert!(reason.contains("per-request token limit"));
             assert!(retry_after_secs.is_none()); // No retry-after for per-request limits
         }

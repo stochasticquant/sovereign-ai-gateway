@@ -8,12 +8,12 @@
 
 use crate::schema::AuditEntry;
 use gateway_core::error::{GatewayError, GatewayResult};
-use sqlx::{postgres::PgQueryResult, PgPool, QueryBuilder};
-use std::path::PathBuf;
+use sqlx::{PgPool, QueryBuilder, postgres::PgQueryResult};
+use std::path::{Path, PathBuf};
 use tokio::fs::OpenOptions;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::mpsc;
-use tokio::time::{interval, Duration};
+use tokio::time::{Duration, interval};
 use tracing::{debug, error, info, instrument, warn};
 
 /// Configuration for the audit writer.
@@ -81,8 +81,10 @@ impl AuditWriter {
             Self::writer_task(receiver, db_pool_clone, config_clone).await;
         });
 
-        info!("Audit writer started with batch_size={}, flush_interval={}s",
-              config.batch_size, config.flush_interval_secs);
+        info!(
+            "Audit writer started with batch_size={}, flush_interval={}s",
+            config.batch_size, config.flush_interval_secs
+        );
 
         Ok(Self { sender })
     }
@@ -142,7 +144,7 @@ impl AuditWriter {
     /// Flush a batch of entries to PostgreSQL.
     /// On error, write to fallback file instead.
     #[instrument(skip(db_pool, buffer, fallback_dir))]
-    async fn flush_batch(db_pool: &PgPool, buffer: &mut Vec<AuditEntry>, fallback_dir: &PathBuf) {
+    async fn flush_batch(db_pool: &PgPool, buffer: &mut Vec<AuditEntry>, fallback_dir: &Path) {
         if buffer.is_empty() {
             return;
         }
@@ -152,13 +154,22 @@ impl AuditWriter {
 
         match Self::write_batch_to_db(db_pool, buffer).await {
             Ok(result) => {
-                debug!("Successfully wrote {} audit entries to database", result.rows_affected());
+                debug!(
+                    "Successfully wrote {} audit entries to database",
+                    result.rows_affected()
+                );
                 buffer.clear();
             }
             Err(e) => {
-                error!("Failed to write audit batch to database: {}. Falling back to file.", e);
+                error!(
+                    "Failed to write audit batch to database: {}. Falling back to file.",
+                    e
+                );
                 if let Err(e) = Self::write_batch_to_fallback(buffer, fallback_dir).await {
-                    error!("CRITICAL: Failed to write audit entries to fallback file: {}", e);
+                    error!(
+                        "CRITICAL: Failed to write audit entries to fallback file: {}",
+                        e
+                    );
                     // Still clear buffer to avoid infinite growth
                     buffer.clear();
                 } else {
@@ -181,7 +192,7 @@ impl AuditWriter {
 
         // Use QueryBuilder for batch INSERT
         let mut query_builder = QueryBuilder::new(
-            "INSERT INTO audit_log (id, request_id, timestamp, tenant_id, data_classification, provider_id, model, prompt_tokens, completion_tokens, total_tokens, region, risk_score, decision, latency_ms, status_code, error) "
+            "INSERT INTO audit_log (id, request_id, timestamp, tenant_id, data_classification, provider_id, model, prompt_tokens, completion_tokens, total_tokens, region, risk_score, decision, latency_ms, status_code, error) ",
         );
 
         query_builder.push_values(entries, |mut b, entry| {
@@ -210,7 +221,7 @@ impl AuditWriter {
     #[instrument(skip(entries, fallback_dir))]
     async fn write_batch_to_fallback(
         entries: &[AuditEntry],
-        fallback_dir: &PathBuf,
+        fallback_dir: &Path,
     ) -> Result<(), std::io::Error> {
         // Create fallback file with timestamp
         let filename = format!("audit_fallback_{}.jsonl", chrono::Utc::now().timestamp());
@@ -230,7 +241,11 @@ impl AuditWriter {
         }
 
         file.flush().await?;
-        debug!("Wrote {} entries to fallback file: {}", entries.len(), filepath.display());
+        debug!(
+            "Wrote {} entries to fallback file: {}",
+            entries.len(),
+            filepath.display()
+        );
 
         Ok(())
     }
@@ -241,10 +256,7 @@ impl AuditWriter {
     /// attempts to write them to the database, and deletes
     /// the files on success.
     #[instrument(skip(db_pool))]
-    async fn recover_fallback_files(
-        db_pool: &PgPool,
-        fallback_dir: &PathBuf,
-    ) -> GatewayResult<()> {
+    async fn recover_fallback_files(db_pool: &PgPool, fallback_dir: &PathBuf) -> GatewayResult<()> {
         // Check if directory exists
         if !fallback_dir.exists() {
             return Ok(());
@@ -270,7 +282,10 @@ impl AuditWriter {
                 continue;
             }
 
-            info!("Recovering audit entries from fallback file: {}", path.display());
+            info!(
+                "Recovering audit entries from fallback file: {}",
+                path.display()
+            );
 
             // Read and parse entries
             let content = tokio::fs::read_to_string(&path).await.map_err(|e| {
@@ -300,7 +315,11 @@ impl AuditWriter {
             // Try to write to database
             match Self::write_batch_to_db(db_pool, &entries).await {
                 Ok(_) => {
-                    info!("Recovered {} audit entries from {}", entries.len(), path.display());
+                    info!(
+                        "Recovered {} audit entries from {}",
+                        entries.len(),
+                        path.display()
+                    );
                     recovered_count += entries.len();
 
                     // Delete fallback file on success
@@ -309,14 +328,20 @@ impl AuditWriter {
                     }
                 }
                 Err(e) => {
-                    warn!("Failed to recover entries from {}: {}. Will retry on next startup.",
-                          path.display(), e);
+                    warn!(
+                        "Failed to recover entries from {}: {}. Will retry on next startup.",
+                        path.display(),
+                        e
+                    );
                 }
             }
         }
 
         if recovered_count > 0 {
-            info!("Recovered {} total audit entries from fallback files", recovered_count);
+            info!(
+                "Recovered {} total audit entries from fallback files",
+                recovered_count
+            );
         }
 
         Ok(())

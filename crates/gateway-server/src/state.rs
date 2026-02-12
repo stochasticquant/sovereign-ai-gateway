@@ -13,6 +13,7 @@ pub struct AppState {
     pub db: PgPool,
 
     /// Gateway configuration.
+    #[allow(dead_code)]
     pub config: Arc<GatewayConfig>,
 
     /// Prometheus metrics registry handle.

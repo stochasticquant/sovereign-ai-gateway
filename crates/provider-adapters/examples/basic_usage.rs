@@ -16,8 +16,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .init();
 
     // Get API key from environment
-    let api_key = std::env::var("OPENAI_API_KEY")
-        .expect("OPENAI_API_KEY environment variable not set");
+    let api_key =
+        std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY environment variable not set");
 
     // Configure OpenAI provider with defaults
     let config = OpenAiConfig {

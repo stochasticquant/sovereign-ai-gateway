@@ -32,7 +32,10 @@ pub enum QuotaCheckResult {
     /// Request is allowed.
     Allowed,
     /// Request exceeds quota.
-    Denied { reason: String, retry_after_secs: Option<u64> },
+    Denied {
+        reason: String,
+        retry_after_secs: Option<u64>,
+    },
 }
 
 /// Quota enforcement service.
@@ -171,7 +174,10 @@ impl QuotaEnforcer {
 /// Calculate seconds until midnight UTC (for retry-after header).
 fn seconds_until_midnight() -> u64 {
     let now = Utc::now();
-    let tomorrow = (now + chrono::Duration::days(1)).date_naive().and_hms_opt(0, 0, 0).unwrap();
+    let tomorrow = (now + chrono::Duration::days(1))
+        .date_naive()
+        .and_hms_opt(0, 0, 0)
+        .unwrap();
     let midnight = tomorrow.and_utc();
     (midnight - now).num_seconds().max(0) as u64
 }

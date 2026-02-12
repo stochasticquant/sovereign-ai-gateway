@@ -21,6 +21,7 @@ pub const X_API_KEY: &str = "x-api-key";
 
 /// API key record from database.
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct ApiKeyRecord {
     id: Uuid,
     tenant_id: Uuid,
@@ -74,21 +75,13 @@ pub async fn auth_middleware(
 
             next.run(req).await
         }
-        Err(AuthError::InvalidKey) => (
-            StatusCode::UNAUTHORIZED,
-            "Invalid API key",
-        )
-            .into_response(),
-        Err(AuthError::KeyExpired) => (
-            StatusCode::UNAUTHORIZED,
-            "API key has expired",
-        )
-            .into_response(),
-        Err(AuthError::KeyInactive) => (
-            StatusCode::UNAUTHORIZED,
-            "API key is inactive",
-        )
-            .into_response(),
+        Err(AuthError::InvalidKey) => (StatusCode::UNAUTHORIZED, "Invalid API key").into_response(),
+        Err(AuthError::KeyExpired) => {
+            (StatusCode::UNAUTHORIZED, "API key has expired").into_response()
+        }
+        Err(AuthError::KeyInactive) => {
+            (StatusCode::UNAUTHORIZED, "API key is inactive").into_response()
+        }
         Err(AuthError::DatabaseError(msg)) => {
             tracing::error!("Database error during auth: {}", msg);
             (

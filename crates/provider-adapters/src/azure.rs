@@ -13,7 +13,7 @@ use tracing::{debug, instrument};
 
 use crate::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig};
 use crate::cost;
-use crate::retry::{with_retry, RetryConfig};
+use crate::retry::{RetryConfig, with_retry};
 use crate::traits::{
     LlmProvider, LlmRequest, LlmResponse, Message, ProviderError, ProviderMetadata, Usage,
 };
@@ -158,7 +158,9 @@ impl AzureProvider {
             .map(|m| m.content.clone())
             .unwrap_or_default();
 
-        let model = response.model.unwrap_or_else(|| self.config.deployment_name.clone());
+        let model = response
+            .model
+            .unwrap_or_else(|| self.config.deployment_name.clone());
         let usage = Usage {
             prompt_tokens: response.usage.prompt_tokens,
             completion_tokens: response.usage.completion_tokens,
@@ -166,8 +168,8 @@ impl AzureProvider {
         };
 
         // Calculate estimated cost using Azure pricing (same as OpenAI)
-        let estimated_cost_usd = cost::get_azure_pricing(&model)
-            .map(|pricing| pricing.calculate_cost(&usage));
+        let estimated_cost_usd =
+            cost::get_azure_pricing(&model).map(|pricing| pricing.calculate_cost(&usage));
 
         LlmResponse {
             content,
@@ -297,6 +299,7 @@ struct AzureMessage {
 
 /// Azure OpenAI Chat Completion response.
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 struct AzureChatResponse {
     id: String,
     model: Option<String>, // Azure sometimes omits this
@@ -306,6 +309,7 @@ struct AzureChatResponse {
 
 /// A single choice in the response.
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 struct AzureChoice {
     index: u32,
     message: Option<AzureMessage>,
@@ -386,10 +390,7 @@ mod tests {
 
         let result = AzureProvider::new(config);
         assert!(result.is_err());
-        assert!(matches!(
-            result.unwrap_err(),
-            ProviderError::AuthError(_)
-        ));
+        assert!(matches!(result.unwrap_err(), ProviderError::AuthError(_)));
     }
 
     #[test]
@@ -403,10 +404,7 @@ mod tests {
 
         let result = AzureProvider::new(config);
         assert!(result.is_err());
-        assert!(matches!(
-            result.unwrap_err(),
-            ProviderError::AuthError(_)
-        ));
+        assert!(matches!(result.unwrap_err(), ProviderError::AuthError(_)));
     }
 
     #[test]
@@ -420,10 +418,7 @@ mod tests {
 
         let result = AzureProvider::new(config);
         assert!(result.is_err());
-        assert!(matches!(
-            result.unwrap_err(),
-            ProviderError::AuthError(_)
-        ));
+        assert!(matches!(result.unwrap_err(), ProviderError::AuthError(_)));
     }
 
     #[test]

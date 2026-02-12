@@ -9,7 +9,7 @@
 use provider_adapters::anthropic::{AnthropicConfig, AnthropicProvider};
 use provider_adapters::openai::{OpenAiConfig, OpenAiProvider};
 use provider_adapters::registry::{HealthCheckConfig, ProviderRegistry};
-use provider_adapters::traits::{LlmProvider, LlmRequest, Message};
+use provider_adapters::traits::{LlmRequest, Message};
 use std::sync::Arc;
 use std::time::Duration;
 

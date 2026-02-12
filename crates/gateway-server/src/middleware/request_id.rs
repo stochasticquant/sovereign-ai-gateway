@@ -1,11 +1,6 @@
 //! Request ID middleware for tracing and correlation.
 
-use axum::{
-    extract::Request,
-    http::HeaderValue,
-    middleware::Next,
-    response::Response,
-};
+use axum::{extract::Request, http::HeaderValue, middleware::Next, response::Response};
 use gateway_core::types::RequestId;
 
 /// Header name for request ID.

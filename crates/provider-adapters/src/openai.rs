@@ -12,7 +12,7 @@ use tracing::{debug, instrument};
 
 use crate::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig};
 use crate::cost;
-use crate::retry::{with_retry, RetryConfig};
+use crate::retry::{RetryConfig, with_retry};
 use crate::traits::{LlmProvider, LlmRequest, LlmResponse, ProviderError, ProviderMetadata, Usage};
 
 /// OpenAI provider configuration.
@@ -63,7 +63,9 @@ impl OpenAiProvider {
         let client = Client::builder()
             .timeout(std::time::Duration::from_secs(config.timeout_secs))
             .build()
-            .map_err(|e| ProviderError::RequestFailed(format!("Failed to build HTTP client: {}", e)))?;
+            .map_err(|e| {
+                ProviderError::RequestFailed(format!("Failed to build HTTP client: {}", e))
+            })?;
 
         let metadata = ProviderMetadata {
             id: "openai".to_string(),
@@ -122,8 +124,8 @@ impl OpenAiProvider {
         };
 
         // Calculate estimated cost
-        let estimated_cost_usd = cost::get_openai_pricing(&response.model)
-            .map(|pricing| pricing.calculate_cost(&usage));
+        let estimated_cost_usd =
+            cost::get_openai_pricing(&response.model).map(|pricing| pricing.calculate_cost(&usage));
 
         LlmResponse {
             content,
@@ -165,17 +167,19 @@ impl OpenAiProvider {
 
         // Handle different status codes
         if status.is_success() {
-            let openai_response: OpenAiChatResponse = response
-                .json()
-                .await
-                .map_err(|e| ProviderError::RequestFailed(format!("Failed to parse response: {}", e)))?;
+            let openai_response: OpenAiChatResponse = response.json().await.map_err(|e| {
+                ProviderError::RequestFailed(format!("Failed to parse response: {}", e))
+            })?;
 
             let result = self.translate_response(openai_response);
             self.circuit_breaker.record_success().await;
             Ok(result)
         } else {
             // Parse error response
-            let error_body = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            let error_body = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
             let error = match status {
                 StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => {
                     ProviderError::AuthError(format!("Authentication failed: {}", error_body))
@@ -261,6 +265,7 @@ struct OpenAiMessage {
 
 /// OpenAI Chat Completion response.
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 struct OpenAiChatResponse {
     id: String,
     model: String,
@@ -270,6 +275,7 @@ struct OpenAiChatResponse {
 
 /// A single choice in the response.
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 struct OpenAiChoice {
     index: u32,
     message: Option<OpenAiMessage>,

@@ -166,7 +166,8 @@ impl DetectionReport {
         let mut categories: HashMap<String, usize> = HashMap::new();
 
         for detection in &self.detections {
-            *categories.entry(detection.pii_type.category().to_string())
+            *categories
+                .entry(detection.pii_type.category().to_string())
                 .or_insert(0) += 1;
         }
 

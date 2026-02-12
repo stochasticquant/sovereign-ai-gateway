@@ -205,7 +205,9 @@ impl ProviderRegistry {
     /// Gets detailed health information for all providers.
     ///
     /// Returns a map of provider ID -> (status, last_check, last_error).
-    pub async fn get_all_health_info(&self) -> HashMap<String, (HealthStatus, Option<Instant>, Option<String>)> {
+    pub async fn get_all_health_info(
+        &self,
+    ) -> HashMap<String, (HealthStatus, Option<Instant>, Option<String>)> {
         let providers = self.providers.read().await;
         providers
             .iter()
@@ -237,11 +239,8 @@ impl ProviderRegistry {
         };
 
         // Perform health check with timeout
-        let health_result = tokio::time::timeout(
-            self.config.check_timeout,
-            provider.health_check(),
-        )
-        .await;
+        let health_result =
+            tokio::time::timeout(self.config.check_timeout, provider.health_check()).await;
 
         // Update health status based on result
         let mut providers = self.providers.write().await;
@@ -261,7 +260,9 @@ impl ProviderRegistry {
                         rp.health.status = HealthStatus::Healthy;
                     }
 
-                    if previous_status != HealthStatus::Healthy && rp.health.status == HealthStatus::Healthy {
+                    if previous_status != HealthStatus::Healthy
+                        && rp.health.status == HealthStatus::Healthy
+                    {
                         info!(
                             provider_id = %id,
                             consecutive_successes = rp.health.consecutive_successes,
@@ -285,7 +286,9 @@ impl ProviderRegistry {
                         rp.health.status = HealthStatus::Unhealthy;
                     }
 
-                    if previous_status != HealthStatus::Unhealthy && rp.health.status == HealthStatus::Unhealthy {
+                    if previous_status != HealthStatus::Unhealthy
+                        && rp.health.status == HealthStatus::Unhealthy
+                    {
                         warn!(
                             provider_id = %id,
                             consecutive_failures = rp.health.consecutive_failures,
@@ -310,7 +313,9 @@ impl ProviderRegistry {
                         rp.health.status = HealthStatus::Unhealthy;
                     }
 
-                    if previous_status != HealthStatus::Unhealthy && rp.health.status == HealthStatus::Unhealthy {
+                    if previous_status != HealthStatus::Unhealthy
+                        && rp.health.status == HealthStatus::Unhealthy
+                    {
                         warn!(
                             provider_id = %id,
                             consecutive_failures = rp.health.consecutive_failures,
@@ -516,11 +521,17 @@ mod tests {
         registry.register("test-provider", provider).await;
 
         // First check - still unknown (needs 2 successes)
-        let status = registry.check_provider_health("test-provider").await.unwrap();
+        let status = registry
+            .check_provider_health("test-provider")
+            .await
+            .unwrap();
         assert_eq!(status, HealthStatus::Unknown);
 
         // Second check - should become healthy
-        let status = registry.check_provider_health("test-provider").await.unwrap();
+        let status = registry
+            .check_provider_health("test-provider")
+            .await
+            .unwrap();
         assert_eq!(status, HealthStatus::Healthy);
 
         // Verify it appears in healthy providers

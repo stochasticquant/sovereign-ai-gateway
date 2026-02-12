@@ -5,11 +5,11 @@
 //! This example shows how the provider adapters handle failures
 //! and recover automatically using retry logic and circuit breakers.
 
-use provider_adapters::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitState};
-use provider_adapters::retry::{with_retry, RetryConfig};
+use provider_adapters::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig};
+use provider_adapters::retry::{RetryConfig, with_retry};
 use provider_adapters::traits::ProviderError;
-use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
 
 #[tokio::main]
@@ -49,7 +49,11 @@ async fn demo_retry_logic() -> Result<(), Box<dyn std::error::Error>> {
             let count = attempt_count.clone();
             async move {
                 let current = count.fetch_add(1, Ordering::SeqCst);
-                println!("  Attempt {} at {:?}", current + 1, std::time::Instant::now());
+                println!(
+                    "  Attempt {} at {:?}",
+                    current + 1,
+                    std::time::Instant::now()
+                );
 
                 if current < 2 {
                     // Fail first 2 attempts
@@ -65,7 +69,10 @@ async fn demo_retry_logic() -> Result<(), Box<dyn std::error::Error>> {
 
     match result {
         Ok(msg) => {
-            println!("\n✓ Operation succeeded after {} attempts", attempt_count.load(Ordering::SeqCst));
+            println!(
+                "\n✓ Operation succeeded after {} attempts",
+                attempt_count.load(Ordering::SeqCst)
+            );
             println!("  Result: {}", msg);
         }
         Err(e) => {
@@ -83,7 +90,11 @@ async fn demo_retry_logic() -> Result<(), Box<dyn std::error::Error>> {
             let count = attempt_count2.clone();
             async move {
                 let current = count.fetch_add(1, Ordering::SeqCst);
-                println!("  Attempt {} at {:?}", current + 1, std::time::Instant::now());
+                println!(
+                    "  Attempt {} at {:?}",
+                    current + 1,
+                    std::time::Instant::now()
+                );
                 Err::<&str, _>(ProviderError::AuthError("Invalid API key".to_string()))
             }
         })
@@ -93,7 +104,10 @@ async fn demo_retry_logic() -> Result<(), Box<dyn std::error::Error>> {
     match result {
         Err(ProviderError::AuthError(_)) => {
             println!("\n✓ Correctly failed fast without retries");
-            println!("  Total attempts: {}", attempt_count2.load(Ordering::SeqCst));
+            println!(
+                "  Total attempts: {}",
+                attempt_count2.load(Ordering::SeqCst)
+            );
         }
         _ => println!("✗ Unexpected result"),
     }
@@ -123,7 +137,11 @@ async fn demo_circuit_breaker() -> Result<(), Box<dyn std::error::Error>> {
         circuit_breaker
             .record_failure(&ProviderError::Timeout)
             .await;
-        println!("  Failure {} recorded. State: {:?}", i, circuit_breaker.state().await);
+        println!(
+            "  Failure {} recorded. State: {:?}",
+            i,
+            circuit_breaker.state().await
+        );
     }
 
     println!("\n✓ Circuit is now OPEN (failing fast)");
@@ -141,14 +159,21 @@ async fn demo_circuit_breaker() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("\nCircuit should transition to HALF-OPEN...");
     let _ = circuit_breaker.before_request().await;
-    println!("State after recovery timeout: {:?}", circuit_breaker.state().await);
+    println!(
+        "State after recovery timeout: {:?}",
+        circuit_breaker.state().await
+    );
 
     // Simulate successful requests to close circuit
     println!("\nSimulating {} successful requests...", 2);
     for i in 1..=2 {
         let _ = circuit_breaker.before_request().await;
         circuit_breaker.record_success().await;
-        println!("  Success {} recorded. State: {:?}", i, circuit_breaker.state().await);
+        println!(
+            "  Success {} recorded. State: {:?}",
+            i,
+            circuit_breaker.state().await
+        );
     }
 
     println!("\n✓ Circuit is now CLOSED (normal operation)");
@@ -161,7 +186,10 @@ async fn demo_circuit_breaker() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     println!("\nCircuit breaker metrics:");
-    println!("  State transitions: {}", circuit_breaker.state_change_count());
+    println!(
+        "  State transitions: {}",
+        circuit_breaker.state_change_count()
+    );
 
     Ok(())
 }
