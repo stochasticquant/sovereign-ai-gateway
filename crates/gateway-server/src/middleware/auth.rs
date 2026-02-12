@@ -75,11 +75,16 @@ pub async fn auth_middleware(
 
             next.run(req).await
         }
-        Err(AuthError::InvalidKey) => (StatusCode::UNAUTHORIZED, "Invalid API key").into_response(),
+        Err(AuthError::InvalidKey) => {
+            crate::metrics::record_blocked("auth_failed");
+            (StatusCode::UNAUTHORIZED, "Invalid API key").into_response()
+        }
         Err(AuthError::KeyExpired) => {
+            crate::metrics::record_blocked("auth_failed");
             (StatusCode::UNAUTHORIZED, "API key has expired").into_response()
         }
         Err(AuthError::KeyInactive) => {
+            crate::metrics::record_blocked("auth_failed");
             (StatusCode::UNAUTHORIZED, "API key is inactive").into_response()
         }
         Err(AuthError::DatabaseError(msg)) => {

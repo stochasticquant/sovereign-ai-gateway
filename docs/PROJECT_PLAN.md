@@ -4,21 +4,21 @@
 
 **Active Branch**: `feature/phase-3-provider-integration`
 **Latest PR**: #1 - Phase 3: Provider Integration
-**Project Completion**: ~60% (3 of 5 phases complete)
+**Project Completion**: ~80% (4 of 5 phases complete)
 
 | Phase | Status | Branch | Tests | Action Needed |
 |-------|--------|--------|-------|---------------|
 | Phase 1 | ✅ Merged | `main` | N/A | None - Complete |
 | Phase 2 | ✅ 78% Done | `feature/phase-2-policy-firewall` | 36/36 ✅ | **Merge to main** or add enhancements |
 | Phase 3 | ✅ Complete | `feature/phase-3-provider-integration` | 57/57 ✅ | **Review & merge PR #1** |
-| Phase 4 | 📋 Planned | TBD | TBD | Start after Phase 3 merge |
-| Phase 5 | 🔮 Future | N/A | N/A | Blocked by Phase 4 |
+| Phase 4 | ✅ Complete | `feature/phase-3-provider-integration` | 132/132 ✅ | **Commit & create PR** |
+| Phase 5 | 🔮 Future | N/A | N/A | Ready to start |
 
 **Critical Path**:
-1. ✅ Phase 3 PR created → **YOU ARE HERE**
-2. ⏳ Merge PR #1 (Phase 3) to main
-3. ⏳ Decide on Phase 2: Merge as-is OR add optional enhancements first
-4. 🚀 Begin Phase 4 - Audit Log & Token Governor
+1. ✅ Phase 3 PR created
+2. ✅ Phase 4 implementation complete
+3. ⏳ Merge PR #1 (Phase 3 + 4) to main
+4. 🚀 Begin Phase 5 - Advanced Features
 
 ---
 
@@ -279,26 +279,33 @@ Enterprise-grade AI control plane built in Rust for enforcing data sovereignty, 
 
 **Action Required**: Review and merge PR #1
 
-### Phase 4: Observability & Governance 📋 PLANNED
-**Status**: Ready to start
-**Priority Components**: Audit Log → Token Governor → Streaming → Metrics → Tracing
-**Estimated Duration**: 4-6 work sessions
+### Phase 4: Observability & Governance ✅ COMPLETE
+**Branch**: `feature/phase-3-provider-integration`
+**Status**: Complete - all features implemented
+**Tests**: 132/132 passing (75 new tests)
 
-**Planned Features**:
-- [ ] Audit logging (PostgreSQL-backed, compliance-grade)
-- [ ] Token governance (usage tracking, quota enforcement)
-- [ ] Streaming support for all providers (SSE)
-- [ ] Prometheus metrics (provider, request, circuit breaker metrics)
-- [ ] OpenTelemetry tracing (distributed tracing with Jaeger)
-- [ ] Cost tracking per tenant
-- [ ] Rate limiting per tenant
-- [ ] Retention policies
-- [ ] Export capabilities (JSON, CSV)
+**Completed Features**:
+- [x] Audit log exporter (paginated JSON/CSV export with filtering)
+- [x] Cost calculation (bridges provider-adapters pricing into token-governor)
+- [x] Pre-flight token estimation (heuristic: chars/4 + overhead)
+- [x] Sliding window rate limiting (per-tenant, in-memory)
+- [x] Prometheus metrics (requests, latency, tokens, cost, blocked, audit)
+- [x] OpenTelemetry distributed tracing (OTLP gRPC to Jaeger)
+- [x] Audit logging wired into request pipeline (non-blocking via channels)
+- [x] Full pipeline integration (provider dispatch, cost calc, token tracking, audit, metrics)
+- [x] Admin audit export endpoint (GET /admin/audit/export)
+- [ ] Streaming support for all providers (SSE) — deferred to Phase 5
+
+**New Files Created**:
+- `crates/gateway-server/src/metrics.rs` — Metric constants + recording helpers
+- `crates/gateway-server/src/telemetry.rs` — OTel pipeline init/shutdown
+- `crates/gateway-server/src/handlers/admin/audit_export.rs` — Audit export handler
 
 ### Phase 5: Advanced Features 🔮 FUTURE
-**Status**: Not yet started
-**Prerequisites**: Phase 4 complete
+**Status**: Ready to start
+**Prerequisites**: ✅ Phase 4 complete
 
+- [ ] Streaming SSE support for all providers
 - [ ] Memory service with ONNX embeddings
 - [ ] Qdrant vector storage integration
 - [ ] Semantic caching

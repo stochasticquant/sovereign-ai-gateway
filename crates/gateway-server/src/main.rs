@@ -1,9 +1,11 @@
 mod db;
 mod handlers;
+pub mod metrics;
 mod middleware;
 mod router;
 mod shutdown;
 mod state;
+mod telemetry;
 
 use gateway_core::config::GatewayConfig;
 use metrics_exporter_prometheus::PrometheusBuilder;
@@ -13,28 +15,20 @@ use tracing::{error, info};
 
 #[tokio::main]
 async fn main() {
-    // Initialize tracing
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "sovereign_gateway=debug,tower_http=debug".into()),
-        )
-        .json()
-        .init();
-
-    info!("Sovereign AI Gateway starting up");
-
-    // Load configuration
+    // Load configuration first (needed for telemetry init)
     let config = match GatewayConfig::load() {
-        Ok(cfg) => {
-            info!("Configuration loaded successfully");
-            cfg
-        }
+        Ok(cfg) => cfg,
         Err(e) => {
-            error!("Failed to load configuration: {}", e);
+            eprintln!("Failed to load configuration: {}", e);
             std::process::exit(1);
         }
     };
+
+    // Initialize telemetry (tracing + optional OpenTelemetry)
+    let otel_provider = telemetry::init_telemetry(&config.telemetry);
+
+    info!("Sovereign AI Gateway starting up");
+    info!("Configuration loaded successfully");
 
     // Initialize Prometheus metrics
     let metrics_handle = PrometheusBuilder::new()
@@ -50,8 +44,14 @@ async fn main() {
         }
     };
 
-    // Create shared application state
-    let app_state = AppState::new(db_pool, config.clone(), metrics_handle);
+    // Create shared application state (initializes audit writer, rate limiter, etc.)
+    let app_state = match AppState::new(db_pool, config.clone(), metrics_handle).await {
+        Ok(state) => state,
+        Err(e) => {
+            error!("Failed to initialize application state: {}", e);
+            std::process::exit(1);
+        }
+    };
 
     // Build router
     let app = router::build_router(app_state);
@@ -82,6 +82,9 @@ async fn main() {
         .with_graceful_shutdown(shutdown::shutdown_signal())
         .await
         .expect("Server error");
+
+    // Flush telemetry on shutdown
+    telemetry::shutdown_telemetry(otel_provider);
 
     info!("Sovereign AI Gateway shut down gracefully");
 }

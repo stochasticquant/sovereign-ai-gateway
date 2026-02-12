@@ -84,6 +84,8 @@ pub async fn quota_middleware(State(state): State<AppState>, req: Request, next:
                 "Quota exceeded"
             );
 
+            crate::metrics::record_blocked("quota_exceeded");
+
             // Return 429 Too Many Requests
             let mut response = (StatusCode::TOO_MANY_REQUESTS, reason).into_response();
 
@@ -108,27 +110,46 @@ pub async fn quota_middleware(State(state): State<AppState>, req: Request, next:
     }
 }
 
-/// Estimate tokens from request body.
+/// Estimate tokens from request body using heuristic-based estimation.
 ///
-/// This is a simple heuristic estimation:
-/// - Extracts `max_tokens` from the request if present
-/// - Otherwise, uses a conservative default of 2048 tokens
-///
-/// TODO(phase-6): Use tiktoken-rs for accurate token counting.
+/// Parses the request body to extract messages and max_tokens,
+/// then uses `TokenEstimator` for a character-based estimate.
 fn estimate_tokens_from_body(body: &Bytes) -> i32 {
-    // Parse JSON body
     let json: Value = match serde_json::from_slice(body) {
         Ok(v) => v,
-        Err(_) => return 2048, // Default estimate if parsing fails
+        Err(_) => return 2048,
     };
 
-    // Extract max_tokens field if present
-    if let Some(max_tokens) = json.get("max_tokens").and_then(|v| v.as_i64()) {
-        return max_tokens.min(i32::MAX as i64) as i32;
+    let model = json
+        .get("model")
+        .and_then(|v| v.as_str())
+        .unwrap_or("unknown");
+
+    let max_tokens = json
+        .get("max_tokens")
+        .and_then(|v| v.as_u64())
+        .map(|v| v.min(u32::MAX as u64) as u32);
+
+    // Extract messages as (role, content) pairs for the estimator
+    let messages: Vec<(String, String)> = json
+        .get("messages")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|msg| {
+                    let role = msg.get("role")?.as_str()?.to_string();
+                    let content = msg.get("content")?.as_str()?.to_string();
+                    Some((role, content))
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+
+    if messages.is_empty() {
+        return max_tokens.unwrap_or(2048) as i32;
     }
 
-    // Default conservative estimate
-    2048
+    token_governor::TokenEstimator::estimate_total_tokens(model, &messages, max_tokens) as i32
 }
 
 #[cfg(test)]
@@ -136,14 +157,32 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_estimate_tokens_with_max_tokens() {
-        let body = br#"{"model": "gpt-4", "max_tokens": 1000}"#;
+    fn test_estimate_tokens_with_messages_and_max_tokens() {
+        let body = br#"{"model": "gpt-4", "max_tokens": 1000, "messages": [{"role": "user", "content": "Hello, world!"}]}"#;
         let bytes = Bytes::from_static(body);
-        assert_eq!(estimate_tokens_from_body(&bytes), 1000);
+        let estimate = estimate_tokens_from_body(&bytes);
+        // 13 chars → ceil(13/4)=4 + 4 overhead = 8, + 3 base = 11 prompt + 1000 completion = 1011
+        assert_eq!(estimate, 1011);
     }
 
     #[test]
-    fn test_estimate_tokens_without_max_tokens() {
+    fn test_estimate_tokens_with_messages_no_max_tokens() {
+        let body = br#"{"model": "gpt-4o", "messages": [{"role": "user", "content": "Hi"}]}"#;
+        let bytes = Bytes::from_static(body);
+        let estimate = estimate_tokens_from_body(&bytes);
+        // "Hi" = 2 chars → ceil(2/4)=1 + 4 = 5, + 3 base = 8 prompt + 4096 default = 4104
+        assert_eq!(estimate, 4104);
+    }
+
+    #[test]
+    fn test_estimate_tokens_no_messages_with_max_tokens() {
+        let body = br#"{"model": "gpt-4", "max_tokens": 500}"#;
+        let bytes = Bytes::from_static(body);
+        assert_eq!(estimate_tokens_from_body(&bytes), 500);
+    }
+
+    #[test]
+    fn test_estimate_tokens_no_messages_no_max_tokens() {
         let body = br#"{"model": "gpt-4"}"#;
         let bytes = Bytes::from_static(body);
         assert_eq!(estimate_tokens_from_body(&bytes), 2048);

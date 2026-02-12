@@ -18,8 +18,8 @@ pub fn build_router(state: AppState) -> Router {
         .route("/ready", get(handlers::health::ready))
         .route("/metrics", get(handlers::health::metrics));
 
-    // API routes with authentication and quota enforcement
-    // Middleware order (from outer to inner): auth → quota → handler
+    // API routes with authentication, rate limiting, and quota enforcement
+    // Middleware order (from outer to inner): auth → rate_limit → quota → handler
     let api_routes = Router::new()
         .route("/chat/completions", post(handlers::chat::chat_completions))
         .layer(axum_middleware::from_fn_with_state(
@@ -28,12 +28,16 @@ pub fn build_router(state: AppState) -> Router {
         ))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
+            middleware::rate_limit::rate_limit_middleware,
+        ))
+        .layer(axum_middleware::from_fn_with_state(
+            state.clone(),
             middleware::auth::auth_middleware,
         ));
 
-    // Admin routes (will add authentication later)
-    // TODO(phase-2): Add admin endpoints for tenants, keys, policies
-    let admin_routes = Router::new();
+    // Admin routes for audit export and management
+    let admin_routes =
+        Router::new().route("/audit/export", get(handlers::admin::audit_export::export));
 
     // Combine all routes and apply middleware
     // Note: Middleware is applied in reverse order (bottom-up)
