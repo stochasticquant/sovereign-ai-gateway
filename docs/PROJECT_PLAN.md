@@ -3,16 +3,18 @@
 ## 📊 Current Status (2026-02-12)
 
 **Active Branch**: `main`
-**Project Completion**: ~80% (4 of 5 phases complete)
+**Project Completion**: ~85% (4 of 5 phases complete, Phase 2 enhancements merged)
 
 | Phase | Status | Branch | Tests |
 |-------|--------|--------|-------|
 | Phase 1 | ✅ Merged | `main` | N/A |
 | Phase 2 | ✅ Merged | `main` | 36/36 ✅ |
+| Phase 2 Enhancements | ✅ Merged | `main` | 150/150 ✅ |
 | Phase 3 | ✅ Merged | `main` | 57/57 ✅ |
 | Phase 4 | ✅ Merged | `main` | 132/132 ✅ |
 | Phase 5 | 🔮 Ready | N/A | N/A |
 
+**Total**: 150 tests passing across all crates
 **Next**: Begin Phase 5 - Advanced Features
 
 ---
@@ -227,16 +229,15 @@ Enterprise-grade AI control plane built in Rust for enforcing data sovereignty, 
 - [x] Configuration system (layered TOML)
 - [x] UUIDv7 support (time-sortable IDs)
 
-### Phase 2: Policy & Firewall ✅ COMPLETE - ⏳ PENDING MERGE
-**Branch**: `feature/phase-2-policy-firewall`
-**Status**: 78% complete - Core functionality done, optional enhancements remaining
+### Phase 2: Policy & Firewall ✅ COMPLETE & MERGED
+**Branch**: `main`
+**Status**: Complete — all core features and enhancements merged
 **Tests**: 36/36 passing
-**Commits**: 3 major features
 
-**Core Features (Complete)**:
+**Core Features**:
 - [x] Policy engine implementation (schema, loader, evaluator)
 - [x] Policy hot-reload (notify + debounce)
-- [x] PII detection engine (15+ types including Africa-specific)
+- [x] PII detection engine (15 types including Africa-specific)
 - [x] Data classification (4 levels: Public, Internal, Confidential, Restricted)
 - [x] Redaction capabilities (4 strategies: Mask, Hash, Remove, Partial)
 - [x] Luhn validation for credit cards
@@ -244,20 +245,22 @@ Enterprise-grade AI control plane built in Rust for enforcing data sovereignty, 
 - [x] Risk-based classification (0-100 score)
 - [x] Thread-safe policy access (RwLock)
 
-**Optional Enhancements (Remaining)**:
-- [ ] Additional Africa-specific PII patterns
-- [ ] Property tests with proptest
-- [ ] Integration tests for full pipeline
-- [ ] Documentation (policy-schema.md, pii-patterns.md)
+### Phase 2 Enhancements ✅ COMPLETE & MERGED
+**Branch**: `main` (merged from `feature/phase-2-enhancements`)
+**Status**: Complete — 18 new tests, 2 new docs
+**Tests**: 150/150 passing (workspace-wide after enhancements)
 
-**Action Required**: Merge to main or continue with enhancements
+- [x] Africa-specific PII patterns (SA ID with Luhn + date validation, Nigerian BVN, Kenyan National ID, Mobile Money)
+- [x] Healthcare PII patterns (MRN with contextual prefix, ICD-10 diagnosis codes, 30 common drug names)
+- [x] Financial PII patterns (IBAN, SWIFT/BIC codes)
+- [x] Property-based tests with proptest (7 invariant tests)
+- [x] Documentation: `docs/policy-schema.md` (TOML policy reference)
+- [x] Documentation: `docs/pii-patterns.md` (PII pattern catalog)
 
-### Phase 3: Provider Integration ✅ COMPLETE - 🔄 PR OPEN
-**Branch**: `feature/phase-3-provider-integration`
-**Status**: Complete and ready for merge
-**PR**: #1 (https://github.com/stochasticquant/sovereign-ai-gateway/pull/1)
+### Phase 3: Provider Integration ✅ COMPLETE & MERGED
+**Branch**: `main`
+**Status**: Complete and merged
 **Tests**: 57/57 passing
-**Commits**: 13 commits (7 Phase 3 + 6 Phase 2 base)
 
 - [x] OpenAI adapter (GPT-3.5, GPT-4, GPT-4o)
 - [x] Anthropic adapter (Claude 3/3.5 Sonnet/Opus)
@@ -270,16 +273,13 @@ Enterprise-grade AI control plane built in Rust for enforcing data sovereignty, 
 - [x] Cost estimation per provider
 - [x] 3 comprehensive examples
 - [x] Complete documentation
-- [ ] Streaming support (deferred to Phase 4)
+- [ ] Streaming support — deferred to Phase 5
 
-**Action Required**: Review and merge PR #1
-
-### Phase 4: Observability & Governance ✅ COMPLETE
-**Branch**: `feature/phase-3-provider-integration`
-**Status**: Complete - all features implemented
+### Phase 4: Observability & Governance ✅ COMPLETE & MERGED
+**Branch**: `main`
+**Status**: Complete and merged
 **Tests**: 132/132 passing (75 new tests)
 
-**Completed Features**:
 - [x] Audit log exporter (paginated JSON/CSV export with filtering)
 - [x] Cost calculation (bridges provider-adapters pricing into token-governor)
 - [x] Pre-flight token estimation (heuristic: chars/4 + overhead)
@@ -290,11 +290,6 @@ Enterprise-grade AI control plane built in Rust for enforcing data sovereignty, 
 - [x] Full pipeline integration (provider dispatch, cost calc, token tracking, audit, metrics)
 - [x] Admin audit export endpoint (GET /admin/audit/export)
 - [ ] Streaming support for all providers (SSE) — deferred to Phase 5
-
-**New Files Created**:
-- `crates/gateway-server/src/metrics.rs` — Metric constants + recording helpers
-- `crates/gateway-server/src/telemetry.rs` — OTel pipeline init/shutdown
-- `crates/gateway-server/src/handlers/admin/audit_export.rs` — Audit export handler
 
 ### Phase 5: Advanced Features 🔮 FUTURE
 **Status**: Ready to start
