@@ -81,10 +81,7 @@ impl PolicyLoader {
             }
 
             // Skip if in examples subdirectory (those are templates)
-            if path
-                .components()
-                .any(|c| c.as_os_str() == "examples")
-            {
+            if path.components().any(|c| c.as_os_str() == "examples") {
                 debug!("Skipping example policy: {}", path.display());
                 continue;
             }
@@ -97,7 +94,10 @@ impl PolicyLoader {
                         .unwrap_or("unknown")
                         .to_string();
 
-                    info!("Loaded policy: {} ({})", filename, policy.metadata.description);
+                    info!(
+                        "Loaded policy: {} ({})",
+                        filename, policy.metadata.description
+                    );
                     new_policies.insert(filename, policy);
                     loaded_count += 1;
                 }
@@ -121,7 +121,11 @@ impl PolicyLoader {
         debug!("Loading policy from {}", path.display());
 
         let content = tokio::fs::read_to_string(path).await.map_err(|e| {
-            GatewayError::ConfigError(format!("Failed to read policy file {}: {}", path.display(), e))
+            GatewayError::ConfigError(format!(
+                "Failed to read policy file {}: {}",
+                path.display(),
+                e
+            ))
         })?;
 
         let policy: Policy = toml::from_str(&content).map_err(|e| {
@@ -180,13 +184,16 @@ impl PolicyLoader {
                 ))
             })?;
 
-        info!("Started watching policy directory: {}", self.policy_dir.display());
+        info!(
+            "Started watching policy directory: {}",
+            self.policy_dir.display()
+        );
         self.watcher = Some(watcher);
 
         // Spawn background task to handle file events
         tokio::spawn(async move {
             // Debounce timer to avoid reloading too frequently
-            let mut debounce_timer: Option<tokio::time::Instant> = None;
+            let mut debounce_timer;
             const DEBOUNCE_DURATION: Duration = Duration::from_millis(500);
 
             while let Some(event) = rx.recv().await {
@@ -292,7 +299,11 @@ impl PolicyLoader {
     /// Load a policy synchronously (for use in sync context).
     fn load_policy_sync(path: &Path) -> Result<Policy, GatewayError> {
         let content = std::fs::read_to_string(path).map_err(|e| {
-            GatewayError::ConfigError(format!("Failed to read policy file {}: {}", path.display(), e))
+            GatewayError::ConfigError(format!(
+                "Failed to read policy file {}: {}",
+                path.display(),
+                e
+            ))
         })?;
 
         let policy: Policy = toml::from_str(&content).map_err(|e| {

@@ -4,12 +4,11 @@
 //! Must be deterministic and side-effect free for testability.
 
 use crate::decision::{
-    EvaluationContext, PolicyDecision, PolicyViolation, RouteDecision, RedactionLevel, Severity,
+    EvaluationContext, PolicyDecision, PolicyViolation, RedactionLevel, RouteDecision, Severity,
     ViolationType,
 };
 use crate::schema::{Policy, RoutingConstraint};
-use gateway_core::types::DataClassification;
-use tracing::{debug, warn};
+use tracing::debug;
 
 /// Policy evaluator for making routing decisions.
 pub struct PolicyEvaluator {
@@ -50,7 +49,10 @@ impl PolicyEvaluator {
         }
 
         // Step 3: Get routing constraint for this data classification
-        let constraint = self.policy.data_rules.get_constraint(context.classification);
+        let constraint = self
+            .policy
+            .data_rules
+            .get_constraint(context.classification);
 
         // Step 4: Check if classification blocks all requests
         if matches!(constraint, RoutingConstraint::Blocked) {
@@ -186,7 +188,12 @@ impl PolicyEvaluator {
     /// Determine redaction level based on PII categories.
     fn get_redaction_level(&self, pii_categories: &[String]) -> RedactionLevel {
         // Check if any high-severity categories are present
-        let high_severity = ["national_id", "medical_record", "credit_card", "bank_account"];
+        let high_severity = [
+            "national_id",
+            "medical_record",
+            "credit_card",
+            "bank_account",
+        ];
 
         for category in pii_categories {
             if high_severity.contains(&category.as_str()) {
@@ -209,9 +216,9 @@ mod tests {
     use crate::schema::{
         DataRules, PolicyMetadata, ProviderConfig, Quotas, RedactionConfig, RedactionMode,
     };
-    use gateway_core::types::{RequestId, RequestMetadata, TenantId};
-    use std::collections::HashMap;
     use chrono::Utc;
+    use gateway_core::types::{DataClassification, RequestId, RequestMetadata, TenantId};
+    use std::collections::HashMap;
 
     #[test]
     fn test_allow_public_data_external_provider() {

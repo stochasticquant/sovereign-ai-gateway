@@ -143,9 +143,7 @@ impl PIIDetector {
             return false;
         }
 
-        parts
-            .iter()
-            .all(|part| part.parse::<u8>().is_ok())
+        parts.iter().all(|part| part.parse::<u8>().is_ok())
     }
 }
 
@@ -156,7 +154,7 @@ fn luhn_check(number: &str) -> bool {
 
     for digit in number.chars().rev() {
         if let Some(d) = digit.to_digit(10) {
-            let mut d = d as u32;
+            let mut d = d;
 
             if double {
                 d *= 2;
@@ -177,12 +175,7 @@ fn luhn_check(number: &str) -> bool {
 
 /// Check if SSN is obviously fake (e.g., "000-00-0000", "123-45-6789").
 fn is_obviously_fake_ssn(ssn: &str) -> bool {
-    let fake_patterns = [
-        "000-00-0000",
-        "111-11-1111",
-        "123-45-6789",
-        "999-99-9999",
-    ];
+    let fake_patterns = ["000-00-0000", "111-11-1111", "123-45-6789", "999-99-9999"];
 
     fake_patterns.contains(&ssn)
 }
@@ -211,11 +204,18 @@ mod tests {
         let report = detector.detect(text);
 
         assert!(report.detections.len() >= 2);
-        assert!(report.detections.iter().any(|d| matches!(d.pii_type, PIIType::Email)));
-        assert!(report
-            .detections
-            .iter()
-            .any(|d| matches!(d.pii_type, PIIType::PhoneNumber)));
+        assert!(
+            report
+                .detections
+                .iter()
+                .any(|d| matches!(d.pii_type, PIIType::Email))
+        );
+        assert!(
+            report
+                .detections
+                .iter()
+                .any(|d| matches!(d.pii_type, PIIType::PhoneNumber))
+        );
     }
 
     #[test]

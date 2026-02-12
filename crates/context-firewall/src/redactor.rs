@@ -6,7 +6,7 @@
 //! - Masking: partially masks PII while preserving format
 //! - Hashing: replaces with deterministic hash
 
-use crate::report::{Detection, DetectionReport};
+use crate::report::DetectionReport;
 use sha2::{Digest, Sha256};
 use tracing::debug;
 
@@ -81,7 +81,11 @@ impl Redactor {
         // Add remaining unredacted text
         result.push_str(&text[last_offset..]);
 
-        debug!("Redaction complete (original: {} bytes, redacted: {} bytes)", text.len(), result.len());
+        debug!(
+            "Redaction complete (original: {} bytes, redacted: {} bytes)",
+            text.len(),
+            result.len()
+        );
 
         result
     }
@@ -138,8 +142,11 @@ impl Redactor {
         };
 
         let masked_domain = if domain.len() > 4 {
-            format!("{}******.{}", domain.chars().next().unwrap(),
-                domain.split('.').last().unwrap_or("com"))
+            format!(
+                "{}******.{}",
+                domain.chars().next().unwrap(),
+                domain.split('.').next_back().unwrap_or("com")
+            )
         } else {
             "*".repeat(domain.len())
         };
@@ -179,7 +186,7 @@ impl Redactor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::report::PIIType;
+    use crate::report::{Detection, PIIType};
 
     #[test]
     fn test_mask_email() {
@@ -214,16 +221,14 @@ mod tests {
 
     #[test]
     fn test_redact_text_with_detections() {
-        let mut report = DetectionReport::new(vec![
-            Detection {
-                pii_type: PIIType::Email,
-                offset: 10,
-                length: 18,
-                confidence: 0.95,
-                original: "user@example.com".to_string(),
-                redacted: String::new(),
-            },
-        ]);
+        let mut report = DetectionReport::new(vec![Detection {
+            pii_type: PIIType::Email,
+            offset: 10,
+            length: 18,
+            confidence: 0.95,
+            original: "user@example.com".to_string(),
+            redacted: String::new(),
+        }]);
 
         let redactor = Redactor::new(RedactionStrategy::Mask);
         let text = "Contact me user@example.com for details.";
