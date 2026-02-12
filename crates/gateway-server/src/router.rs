@@ -4,7 +4,7 @@ use crate::{handlers, middleware, state::AppState};
 use axum::{
     http::StatusCode,
     middleware as axum_middleware,
-    routing::get,
+    routing::{get, post},
     Router,
 };
 use std::time::Duration;
@@ -22,9 +22,18 @@ pub fn build_router(state: AppState) -> Router {
         .route("/ready", get(handlers::health::ready))
         .route("/metrics", get(handlers::health::metrics));
 
-    // API routes (will add authentication later)
-    // TODO(phase-2): Add /v1/chat/completions, /v1/embeddings, etc.
-    let api_routes = Router::new();
+    // API routes with authentication and quota enforcement
+    // Middleware order (from outer to inner): auth → quota → handler
+    let api_routes = Router::new()
+        .route("/chat/completions", post(handlers::chat::chat_completions))
+        .layer(axum_middleware::from_fn_with_state(
+            state.clone(),
+            middleware::quota::quota_middleware,
+        ))
+        .layer(axum_middleware::from_fn_with_state(
+            state.clone(),
+            middleware::auth::auth_middleware,
+        ));
 
     // Admin routes (will add authentication later)
     // TODO(phase-2): Add admin endpoints for tenants, keys, policies

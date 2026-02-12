@@ -24,6 +24,9 @@ proptest = { workspace = true }
 assert_matches = { workspace = true }
 tracing = { workspace = true }
 uuid = { workspace = true }
+chrono = { workspace = true }
+sqlx = { workspace = true }
+sha2 = "0.10"
 
 [lib]
 # This crate is for tests only; no production binary depends on it.
